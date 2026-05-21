@@ -49,6 +49,7 @@
         "assets/images/random/WhatsApp Image 2026-05-21 at 17.23.30.jpeg"
     ];
     const WRONG_ANSWER_IMAGE = "assets/images/random/WhatsApp Image 2026-05-21 at 17.23.37.jpeg";
+    const INTRO_AUDIO = "assets/audio/intro_50x15.mp4";
     const INITIAL_TIME = 250;
 
     // --- ICONOS ---
@@ -132,6 +133,16 @@
         const [showJumpScare, setShowJumpScare] = useState(false);
 
         const startGame = () => {
+            if (!isMuted) {
+                const intro = new Audio(INTRO_AUDIO);
+                intro.volume = 0.6;
+                intro.addEventListener('timeupdate', function() {
+                    if (this.currentTime >= 17) {
+                        this.pause();
+                    }
+                });
+                intro.play().catch(e => console.log('Intro audio error:', e));
+            }
             setProgress(questions.map(q => ({
                 status: 'unanswered',
                 answers: [],
