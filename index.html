@@ -19,23 +19,50 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <style>
-        body { margin: 0; padding: 0; }
-        /* Animaciones básicas */
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .fade-in { animation: fadeIn 0.5s ease-in-out; }
-        @keyframes jumpScare {
-            0% { transform: scale(0.3) rotate(-10deg); opacity: 0; }
-            70% { transform: scale(1.05) rotate(3deg); opacity: 1; }
-            100% { transform: scale(1) rotate(2deg); opacity: 1; }
+        body {
+            margin: 0;
+            padding: 0;
         }
-        .animate-jump-scare { animation: jumpScare 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
+        /* Animaciones básicas */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes jumpScare {
+            0% {
+                transform: scale(0.3) rotate(-10deg);
+                opacity: 0;
+            }
+            70% {
+                transform: scale(1.05) rotate(3deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1) rotate(2deg);
+                opacity: 1;
+            }
+        }
+
+        .animate-jump-scare {
+            animation: jumpScare 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
 <div id="root"></div>
 
 <script type="text/babel">
-    const { useState, useEffect, useMemo } = React;
+    const {useState, useEffect, useMemo} = React;
 
     const BACKGROUND_IMAGE = "assets/images/background.png";
     const FRIEND_IMAGES = [
@@ -50,76 +77,302 @@
     ];
     const WRONG_ANSWER_IMAGE = "assets/images/random/WhatsApp Image 2026-05-21 at 17.23.37.jpeg";
     const INTRO_AUDIO = "assets/audio/intro_50x15.mp4";
+    const PASAPALABRA_AUDIO = "assets/audio/pasapalabra_partido_a_partido.mpeg";
     const INITIAL_TIME = 250;
 
     // --- ICONOS ---
-    const Play = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"/></svg>;
-    const Check = ({size=24, className, strokeWidth=3}) => <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
-    const X = ({size=24, className, strokeWidth=3}) => <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
-    const SkipForward = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>;
-    const RotateCcw = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>;
-    const Volume2 = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>;
-    const VolumeX = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>;
-    const Clock = ({size=24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+    const Play = ({size = 24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="none">
+        <polygon points="5 3 19 12 5 21 5 3"/>
+    </svg>;
+    const Check = ({size = 24, className, strokeWidth = 3}) => <svg width={size} height={size} className={className}
+                                                                    viewBox="0 0 24 24" fill="none"
+                                                                    stroke="currentColor" strokeWidth={strokeWidth}
+                                                                    strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="20 6 9 17 4 12"/>
+    </svg>;
+    const X = ({size = 24, className, strokeWidth = 3}) => <svg width={size} height={size} className={className}
+                                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                                strokeWidth={strokeWidth} strokeLinecap="round"
+                                                                strokeLinejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>;
+    const SkipForward = ({size = 24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+                                              stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                                              strokeLinejoin="round">
+        <polygon points="5 4 15 12 5 20 5 4"/>
+        <line x1="19" y1="5" x2="19" y2="19"/>
+    </svg>;
+    const RotateCcw = ({size = 24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                                            strokeLinejoin="round">
+        <polyline points="1 4 1 10 7 10"/>
+        <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+    </svg>;
+    const Volume2 = ({size = 24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+                                          stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                                          strokeLinejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>
+    </svg>;
+    const VolumeX = ({size = 24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+                                          stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                                          strokeLinejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <line x1="23" y1="9" x2="17" y2="15"/>
+        <line x1="17" y1="9" x2="23" y2="15"/>
+    </svg>;
+    const Clock = ({size = 24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+    </svg>;
 
     // --- DATOS DEL JUEGO ---
     const gameData = [
-        { letter: 'A', questions: [{ type: 'empieza', question: 'El mejor club de barrio, el más humilde y luchador que está siempre perseguido y en el punto de mira de árbitros, liga y medios de comunicación:', answer: 'Atleti.' }] },
-        { letter: 'B', questions: [{ type: 'empieza', question: 'Acción agresiva realizada por primera vez por Adrián, más tarde por Arribas que puede poner firme a un amigo:', answer: 'Buco.' }] },
-        { letter: 'C', questions: [
-                { type: 'empieza', question: 'Nacho te llama así de forma cariñosa:', answer: 'Chache' },
-                { type: 'empieza', question: 'Accesorio imprescindible de Guillermo Najas entre los meses de febrero y noviembre:', answer: 'Chanclas' },
-                { type: 'empieza', question: 'Cosa mas loca que has hecho por amor:', answer: 'Curso prematrimonial/Comunión (si dice uno, es el otro) 🥃' }
-            ]},
-        { letter: 'CH', questions: [{ type: 'empieza', question: 'Secta y filosofía que impone un estilo de vida desde 2011 basada en la disciplina, el esfuerzo innegociable, la solidez y la mentalidad competitiva:', answer: 'Cholismo' }] },
-        { letter: 'D', questions: [{ type: 'empieza', question: 'Trofeo que se alzó el 24 de mayo de 2014 en el Estadio da Luz de Lisboa:', answer: 'Décima' }] },
-        { letter: 'E', questions: [
-                { type: 'empieza', question: 'Nacho te partió una en la cabeza:', answer: 'Espada láser' },
-                { type: 'empieza', question: 'Herramienta informática sin la que no podrias vivir:', answer: 'Excel' }
-            ]},
-        { letter: 'F', questions: [
-                { type: 'empieza', question: 'Pablo Javaloyes.', answer: 'Farfollas' },
-                { type: 'empieza', question: 'Expresión canaria que debes usar cuando algo huele especialmente mal.', answer: 'Fos' }
-            ]},
-        { letter: 'G', questions: [
-                { type: 'empieza', question: 'Un presidente, un icono de la España de los 90 y un auténtico mafioso:', answer: 'Gil' },
-                { type: 'empieza', question: 'Amigo y magnífico jugador que te llevó de la mano a recuperar la confianza en el Tomavistas.', answer: 'Gui' }
-            ]},
-        { letter: 'H', questions: [
-                { type: 'empieza', question: 'Pablo Javaloyes lo es:', answer: 'Hijo del metodo científico' },
-                { type: 'empieza', question: 'Barrio que vio nacer al inventor del atletismo moderno.', answer: 'Hortaleza' }
-            ]},
-        { letter: 'I', questions: [{ type: 'empieza', question: 'Numero de veces que te has enamorado:', answer: 'Infinitas' }] },
-        { letter: 'J', questions: [
-                { type: 'empieza', question: 'Acuerdate al poco de estar conmigo antes fumabas:', answer: 'Juan Javaloyes' },
-                { type: 'empieza', question: '"Eso eso, que se J"', answer: 'jodan' }
-            ]},
-        { letter: 'K', questions: [{ type: 'empieza', question: 'Ostenta el mayor numero de partidos jugados con la elástica rojiblanca:', answer: 'Koke' }] },
-        { letter: 'L', questions: [{ type: 'empieza', question: 'Nombre de la verdadera princesa de la casa, receptora oficial de tus mimos y besos, y principal motivo por el que Marina sospecha que en la relación hay un triángulo amoroso:', answer: 'Leeloo' }] },
-        { letter: 'M', questions: [
-                { type: 'empieza', question: 'El verdadero 7 de España:', answer: 'Morata.' },
-                { type: 'empieza', question: 'Capacidad para 70.692 personas:', answer: 'Metropolitano' }
-            ]},
-        { letter: 'N', questions: [{ type: 'empieza', question: 'Comida que te encanta y con la que siempre encareces la cuenta en un restaurante:', answer: 'Nécoras' }] },
-        { letter: 'Ñ', questions: [{ type: 'contiene', question: 'Marie Curie lo fue de pequeña:', answer: 'Niña Polaca' }] },
-        { letter: 'O', questions: [{ type: 'empieza', question: 'Característica genética de los Arribas: si alguien propone una escapada improvisada, ellos ya tienen Excel, reserva y menú cerrado de madrugada.', answer: 'Organizados' }] },
-        { letter: 'P', questions: [{ type: 'empieza', question: 'Por muchas clases que hagas, no hay forma de mejorar:', answer: 'Padel' }] },
-        { letter: 'Q', questions: [{ type: 'empieza', question: 'Existen formas y formas de ser rechazado por una mujer, ¿Con qué ya histórica frase se terminaron tus intenciones de ligar aquella fatídica noche de 2016?:', answer: '¿Quién es usted?' }] },
-        { letter: 'R', questions: [
-                { type: 'empieza', question: 'Es futbolista y posiblemente uno de los jugadores más odiados por el colchonero medio:', answer: 'Ramos / Ronaldo (si dice uno, es el otro) 🥃' },
-                { type: 'empieza', question: 'Termino utilizado comúnmente para describir regiones costeras mediterráneas caracterizadas por ser soleadas, pintorescas y turísticas:', answer: 'Riviera' }
-            ]},
-        { letter: 'S', questions: [{ type: 'empieza', question: 'Compartes cosas con el pichichi de la segunda división. Su nombre empieza por ‘s’:', answer: 'Sergio Arribas.' }] },
-        { letter: 'T', questions: [{ type: 'empieza', question: 'Tu habilidad olimpica mas destacable, el salto al:', answer: 'Tranvia' }] },
-        { letter: 'U', questions: [{ type: 'empieza', question: 'Con la U. El mejor disfraz grupal de este año en el carnaval.', answer: 'Umpa lumpa' }] },
-        { letter: 'V', questions: [
-                { type: 'empieza', question: '¿Quién dijo la frase célebre: “Eu farei 10x se for preciso. Eles não estão preparados”?:', answer: 'Vinicius Jr' },
-                { type: 'empieza', question: 'Banda sonora de la ruina emocional y la dopamina en combustión, cuando estás “cabezabajo” pensando en la vida moderna y la desilusión, pero aun así te lo pones en repetición:', answer: 'Veintiuno' }
-            ]},
-        { letter: 'W', questions: [{ type: 'empieza', question: 'Tanto por ella como por el estadio han ‘pasado’ futbolistas famosos:', answer: 'Wanda' }] },
-        { letter: 'X', questions: [{ type: 'contiene', question: 'Vehículo nocturno que, tras tres trayectos seguidos y mucha conversación improvisada, convirtió un simple encuentro en el inicio de tu historia de amor más inesperada:', answer: 'Taxi' }] },
-        { letter: 'Y', questions: [{ type: 'empieza', question: 'En muchas ocasiones te ‘sales’ de este grupo. Luego vuelves con el rabo entre las piernas rogando por favor que se te vuelva a meter. Esto es un aviso. ¿Nombre del grupo?:', answer: 'Ya' }] },
-        { letter: 'Z', questions: [{ type: 'contiene', question: 'Tu debilidad gastronómica sin explicación y que siempre acaba ganando cualquier decisión, aunque haya cinco opciones mejores en la selección:', answer: 'Arroz' }] }
+        {
+            letter: 'A',
+            questions: [{
+                type: 'empieza',
+                question: 'El mejor club de barrio, el más humilde y luchador que está siempre perseguido y en el punto de mira de árbitros, liga y medios de comunicación:',
+                answer: 'Atleti.'
+            }]
+        },
+        {
+            letter: 'B',
+            questions: [{
+                type: 'empieza',
+                question: 'Acción agresiva realizada por primera vez por Adrián, más tarde por Arribas que puede poner firme a un amigo:',
+                answer: 'Buco.'
+            }]
+        },
+        {
+            letter: 'C', questions: [
+                {type: 'empieza', question: 'Nacho te llama así de forma cariñosa:', answer: 'Chache'},
+                {
+                    type: 'empieza',
+                    question: 'Accesorio imprescindible de Guillermo Najas entre los meses de febrero y noviembre:',
+                    answer: 'Chanclas'
+                },
+                {
+                    type: 'empieza',
+                    question: 'Cosa mas loca que has hecho por amor:',
+                    answer: 'Curso prematrimonial/Comunión (si dice uno, es el otro) 🥃'
+                }
+            ]
+        },
+        {
+            letter: 'CH',
+            questions: [{
+                type: 'empieza',
+                question: 'Secta y filosofía que impone un estilo de vida desde 2011 basada en la disciplina, el esfuerzo innegociable, la solidez y la mentalidad competitiva:',
+                answer: 'Cholismo'
+            }]
+        },
+        {
+            letter: 'D',
+            questions: [{
+                type: 'empieza',
+                question: 'Trofeo que se alzó el 24 de mayo de 2014 en el Estadio da Luz de Lisboa:',
+                answer: 'Décima'
+            }]
+        },
+        {
+            letter: 'E', questions: [
+                {type: 'empieza', question: 'Nacho te partió una en la cabeza:', answer: 'Espada láser'},
+                {type: 'empieza', question: 'Herramienta informática sin la que no podrias vivir:', answer: 'Excel'}
+            ]
+        },
+        {
+            letter: 'F', questions: [
+                {type: 'empieza', question: 'Pablo Javaloyes.', answer: 'Farfollas'},
+                {
+                    type: 'empieza',
+                    question: 'Expresión canaria que debes usar cuando algo huele especialmente mal.',
+                    answer: 'Fos'
+                }
+            ]
+        },
+        {
+            letter: 'G', questions: [
+                {
+                    type: 'empieza',
+                    question: 'Un presidente, un icono de la España de los 90 y un auténtico mafioso:',
+                    answer: 'Gil'
+                },
+                {
+                    type: 'empieza',
+                    question: 'Amigo y magnífico jugador que te llevó de la mano a recuperar la confianza en el Tomavistas.',
+                    answer: 'Gui'
+                }
+            ]
+        },
+        {
+            letter: 'H', questions: [
+                {type: 'empieza', question: 'Pablo Javaloyes lo es:', answer: 'Hijo del metodo científico'},
+                {
+                    type: 'empieza',
+                    question: 'Barrio que vio nacer al inventor del atletismo moderno.',
+                    answer: 'Hortaleza'
+                }
+            ]
+        },
+        {
+            letter: 'I',
+            questions: [{type: 'empieza', question: 'Numero de veces que te has enamorado:', answer: 'Infinitas'}]
+        },
+        {
+            letter: 'J', questions: [
+                {
+                    type: 'empieza',
+                    question: 'Acuerdate al poco de estar conmigo antes fumabas:',
+                    answer: 'Juan Javaloyes'
+                },
+                {type: 'empieza', question: '"Eso eso, que se J"', answer: 'jodan'}
+            ]
+        },
+        {
+            letter: 'K',
+            questions: [{
+                type: 'empieza',
+                question: 'Ostenta el mayor numero de partidos jugados con la elástica rojiblanca:',
+                answer: 'Koke'
+            }]
+        },
+        {
+            letter: 'L',
+            questions: [{
+                type: 'empieza',
+                question: 'Nombre de la verdadera princesa de la casa, receptora oficial de tus mimos y besos, y principal motivo por el que Marina sospecha que en la relación hay un triángulo amoroso:',
+                answer: 'Leeloo'
+            }]
+        },
+        {
+            letter: 'M', questions: [
+                {type: 'empieza', question: 'El verdadero 7 de España:', answer: 'Morata.'},
+                {type: 'empieza', question: 'Capacidad para 70.692 personas:', answer: 'Metropolitano'}
+            ]
+        },
+        {
+            letter: 'N',
+            questions: [{
+                type: 'empieza',
+                question: 'Comida que te encanta y con la que siempre encareces la cuenta en un restaurante:',
+                answer: 'Nécoras'
+            }]
+        },
+        {
+            letter: 'Ñ',
+            questions: [{type: 'contiene', question: 'Marie Curie lo fue de pequeña:', answer: 'Niña Polaca'}]
+        },
+        {
+            letter: 'O',
+            questions: [{
+                type: 'empieza',
+                question: 'Característica genética de los Arribas: si alguien propone una escapada improvisada, ellos ya tienen Excel, reserva y menú cerrado de madrugada.',
+                answer: 'Organizados'
+            }]
+        },
+        {
+            letter: 'P',
+            questions: [{
+                type: 'empieza',
+                question: 'Por muchas clases que hagas, no hay forma de mejorar:',
+                answer: 'Padel'
+            }]
+        },
+        {
+            letter: 'Q',
+            questions: [{
+                type: 'empieza',
+                question: 'Existen formas y formas de ser rechazado por una mujer, ¿Con qué ya histórica frase se terminaron tus intenciones de ligar aquella fatídica noche de 2016?:',
+                answer: '¿Quién es usted?'
+            }]
+        },
+        {
+            letter: 'R', questions: [
+                {
+                    type: 'empieza',
+                    question: 'Es futbolista y posiblemente uno de los jugadores más odiados por el colchonero medio:',
+                    answer: 'Ramos / Ronaldo (si dice uno, es el otro) 🥃'
+                },
+                {
+                    type: 'empieza',
+                    question: 'Termino utilizado comúnmente para describir regiones costeras mediterráneas caracterizadas por ser soleadas, pintorescas y turísticas:',
+                    answer: 'Riviera'
+                }
+            ]
+        },
+        {
+            letter: 'S',
+            questions: [{
+                type: 'empieza',
+                question: 'Compartes cosas con el pichichi de la segunda división. Su nombre empieza por ‘s’:',
+                answer: 'Sergio Arribas.'
+            }]
+        },
+        {
+            letter: 'T',
+            questions: [{
+                type: 'empieza',
+                question: 'Tu habilidad olimpica mas destacable, el salto al:',
+                answer: 'Tranvia'
+            }]
+        },
+        {
+            letter: 'U',
+            questions: [{
+                type: 'empieza',
+                question: 'Con la U. El mejor disfraz grupal de este año en el carnaval.',
+                answer: 'Umpa lumpa'
+            }]
+        },
+        {
+            letter: 'V', questions: [
+                {
+                    type: 'empieza',
+                    question: '¿Quién dijo la frase célebre: “Eu farei 10x se for preciso. Eles não estão preparados”?:',
+                    answer: 'Vinicius Jr'
+                },
+                {
+                    type: 'empieza',
+                    question: 'Banda sonora de la ruina emocional y la dopamina en combustión, cuando estás “cabezabajo” pensando en la vida moderna y la desilusión, pero aun así te lo pones en repetición:',
+                    answer: 'Veintiuno'
+                }
+            ]
+        },
+        {
+            letter: 'W',
+            questions: [{
+                type: 'empieza',
+                question: 'Tanto por ella como por el estadio han ‘pasado’ futbolistas famosos:',
+                answer: 'Wanda'
+            }]
+        },
+        {
+            letter: 'X',
+            questions: [{
+                type: 'contiene',
+                question: 'Vehículo nocturno que, tras tres trayectos seguidos y mucha conversación improvisada, convirtió un simple encuentro en el inicio de tu historia de amor más inesperada:',
+                answer: 'Taxi'
+            }]
+        },
+        {
+            letter: 'Y',
+            questions: [{
+                type: 'empieza',
+                question: 'En muchas ocasiones te ‘sales’ de este grupo. Luego vuelves con el rabo entre las piernas rogando por favor que se te vuelva a meter. Esto es un aviso. ¿Nombre del grupo?:',
+                answer: 'Ya'
+            }]
+        },
+        {
+            letter: 'Z',
+            questions: [{
+                type: 'contiene',
+                question: 'Tu debilidad gastronómica sin explicación y que siempre acaba ganando cualquier decisión, aunque haya cinco opciones mejores en la selección:',
+                answer: 'Arroz'
+            }]
+        }
     ];
 
     function RoscoGame() {
@@ -136,7 +389,7 @@
             if (!isMuted) {
                 const intro = new Audio(INTRO_AUDIO);
                 intro.volume = 0.6;
-                intro.addEventListener('timeupdate', function() {
+                intro.addEventListener('timeupdate', function () {
                     if (this.currentTime >= 17) {
                         this.pause();
                     }
@@ -193,17 +446,16 @@
 
             try {
                 if (!isMuted) {
-                    const audioUrl = isCorrect
-                            ? 'assets/audio/correct.mp3'
-                            : 'assets/audio/incorrect.mp3';
+                    const audioUrl = isCorrect ? 'assets/audio/gol_atletico.m4a' : 'assets/audio/incorrect.mp3';
                     const audio = new Audio(audioUrl);
                     audio.volume = 0.7;
                     audio.play().catch(e => console.log('Audio bloqueado por navegador', e));
                 }
-            } catch (e) {}
+            } catch (e) {
+            }
 
             const newProgress = [...progress];
-            const currentLetterProg = { ...newProgress[currentIndex] };
+            const currentLetterProg = {...newProgress[currentIndex]};
 
             currentLetterProg.answers = [...currentLetterProg.answers, isCorrect];
             currentLetterProg.currentQ += 1;
@@ -227,6 +479,16 @@
         const handlePass = () => {
             if (gameState !== 'playing') return;
             setCurrentPhotoIndex(prev => (prev + 1) % FRIEND_IMAGES.length);
+
+            try {
+                if (!isMuted) {
+                    const audio = new Audio(PASAPALABRA_AUDIO);
+                    audio.volume = 0.7;
+                    audio.play().catch(e => console.log('Audio bloqueado por navegador', e));
+                }
+            } catch (e) {
+            }
+
             const newProgress = [...progress];
             newProgress[currentIndex].status = 'passed';
 
@@ -242,7 +504,7 @@
         const handleLetterClick = (index) => {
             if (gameState === 'setup') return;
             const newProgress = [...progress];
-            newProgress[index] = { status: 'unanswered', answers: [], currentQ: 0 };
+            newProgress[index] = {status: 'unanswered', answers: [], currentQ: 0};
             setProgress(newProgress);
 
             if (gameState === 'finished') {
@@ -252,23 +514,26 @@
         };
 
         const stats = useMemo(() => {
-            let correct = 0; let incorrect = 0;
+            let correct = 0;
+            let incorrect = 0;
             progress.forEach(p => {
-                p.answers.forEach(ans => { if (ans) correct++; else incorrect++; });
+                p.answers.forEach(ans => {
+                    if (ans) correct++; else incorrect++;
+                });
             });
             const totalQuestions = questions.reduce((sum, q) => sum + q.questions.length, 0);
-            return { correct, incorrect, remaining: totalQuestions - correct - incorrect };
+            return {correct, incorrect, remaining: totalQuestions - correct - incorrect};
         }, [progress, questions]);
 
         useEffect(() => {
             if (gameState === 'finished' && stats.correct > 0) {
                 const duration = 3 * 1000;
                 const animationEnd = Date.now() + duration;
-                const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+                const defaults = {startVelocity: 30, spread: 360, ticks: 60, zIndex: 0};
 
                 const randomInRange = (min, max) => Math.random() * (max - min) + min;
 
-                const interval = setInterval(function() {
+                const interval = setInterval(function () {
                     const timeLeft = animationEnd - Date.now();
 
                     if (timeLeft <= 0) {
@@ -276,8 +541,16 @@
                     }
 
                     const particleCount = 50 * (timeLeft / duration);
-                    confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
-                    confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+                    confetti({
+                        ...defaults,
+                        particleCount,
+                        origin: {x: randomInRange(0.1, 0.3), y: Math.random() - 0.2}
+                    });
+                    confetti({
+                        ...defaults,
+                        particleCount,
+                        origin: {x: randomInRange(0.7, 0.9), y: Math.random() - 0.2}
+                    });
                 }, 250);
             }
         }, [gameState]);
@@ -304,275 +577,333 @@
             const center = 160;
 
             return (
-                    <div className="relative w-80 h-80 mx-auto my-8">
-                        <svg className="w-full h-full" viewBox="0 0 320 320">
-                            {questions.map((q, index) => {
-                                const angle = (index / questions.length) * 2 * Math.PI - Math.PI / 2;
-                                const x = center + radius * Math.cos(angle);
-                                const y = center + radius * Math.sin(angle);
+                <div className="relative w-80 h-80 mx-auto my-8">
+                    <svg className="w-full h-full" viewBox="0 0 320 320">
+                        {questions.map((q, index) => {
+                            const angle = (index / questions.length) * 2 * Math.PI - Math.PI / 2;
+                            const x = center + radius * Math.cos(angle);
+                            const y = center + radius * Math.sin(angle);
 
-                                let fillColor = '#3b82f6';
-                                let strokeColor = 'none';
-                                let strokeWidth = '0';
-                                const prog = progress[index] || { status: 'unanswered', answers: [] };
+                            let fillColor = '#3b82f6';
+                            let strokeColor = 'none';
+                            let strokeWidth = '0';
+                            const prog = progress[index] || {status: 'unanswered', answers: []};
 
-                                if (gameState === 'playing' && index === currentIndex) {
-                                    fillColor = '#eab308'; strokeColor = '#ca8a04'; strokeWidth = '3';
-                                } else if (prog.status === 'completed') {
-                                    const allCorrect = prog.answers.every(a => a === true);
-                                    fillColor = allCorrect ? '#22c55e' : '#ef4444';
-                                }
+                            if (gameState === 'playing' && index === currentIndex) {
+                                fillColor = '#eab308';
+                                strokeColor = '#ca8a04';
+                                strokeWidth = '3';
+                            } else if (prog.status === 'completed') {
+                                const allCorrect = prog.answers.every(a => a === true);
+                                fillColor = allCorrect ? '#22c55e' : '#ef4444';
+                            }
 
-                                return (
-                                        <g key={q.letter} transform={`translate(${x}, ${y})`}
-                                           onClick={() => handleLetterClick(index)}
-                                           className={gameState !== 'setup' ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}>
-                                            <circle r="14" fill={fillColor} stroke={strokeColor} strokeWidth={strokeWidth} className="transition-colors duration-300"/>
-                                            <text x="0" y="5" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold" className="pointer-events-none font-sans">
-                                                {q.letter}
+                            return (
+                                <g key={q.letter} transform={`translate(${x}, ${y})`}
+                                   onClick={() => handleLetterClick(index)}
+                                   className={gameState !== 'setup' ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}>
+                                    <circle r="14" fill={fillColor} stroke={strokeColor} strokeWidth={strokeWidth}
+                                            className="transition-colors duration-300"/>
+                                    <text x="0" y="5" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold"
+                                          className="pointer-events-none font-sans">
+                                        {q.letter}
+                                    </text>
+                                    {q.questions.length > 1 && (
+                                        <g transform="translate(10, -10)">
+                                            <circle r="7" fill="#f97316" className="drop-shadow-sm"/>
+                                            <text x="0" y="3" textAnchor="middle" fill="white" fontSize="9"
+                                                  fontWeight="bold" className="pointer-events-none">
+                                                {q.questions.length}
                                             </text>
-                                            {q.questions.length > 1 && (
-                                                    <g transform="translate(10, -10)">
-                                                        <circle r="7" fill="#f97316" className="drop-shadow-sm" />
-                                                        <text x="0" y="3" textAnchor="middle" fill="white" fontSize="9" fontWeight="bold" className="pointer-events-none">
-                                                            {q.questions.length}
-                                                        </text>
-                                                    </g>
-                                            )}
                                         </g>
-                                );
-                            })}
-                        </svg>
+                                    )}
+                                </g>
+                            );
+                        })}
+                    </svg>
 
-                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                            <div
-                                    className="absolute w-48 h-48 rounded-full z-0 opacity-20"
-                                    style={{
-                                        backgroundImage: `url('${BACKGROUND_IMAGE}')`,
-                                        backgroundSize: 'cover',
-                                        backgroundPosition: 'center',
-                                        backgroundColor: '#e2e8f0' /* Color de fondo si no hay imagen */
-                                    }}
-                            />
-                            <div className="relative z-10 flex flex-col items-center">
-                                <div className="text-4xl font-black text-slate-800 drop-shadow-md">
-                                    {stats.correct}
-                                </div>
-                                <div className="text-sm font-bold text-slate-600 bg-white/60 px-3 py-0.5 rounded-full backdrop-blur-sm mt-1">
-                                    Aciertos
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-            );
-        };
-
-        return (
-                <div className="min-h-screen p-4 sm:p-8 font-sans flex flex-col items-center relative overflow-hidden">
-                    <div
-                            className="absolute inset-0 z-0 pointer-events-none"
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <div
+                            className="absolute w-48 h-48 rounded-full z-0 opacity-20"
                             style={{
                                 backgroundImage: `url('${BACKGROUND_IMAGE}')`,
                                 backgroundSize: 'cover',
                                 backgroundPosition: 'center',
-                                backgroundAttachment: 'fixed',
-                                opacity: 0.1
+                                backgroundColor: '#e2e8f0' /* Color de fondo si no hay imagen */
                             }}
-                    />
+                        />
+                        <div className="relative z-10 flex flex-col items-center">
+                            <div className="text-4xl font-black text-slate-800 drop-shadow-md">
+                                {stats.correct}
+                            </div>
+                            <div
+                                className="text-sm font-bold text-slate-600 bg-white/60 px-3 py-0.5 rounded-full backdrop-blur-sm mt-1">
+                                Aciertos
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
 
-                    <div className="relative z-10 w-full flex flex-col items-center">
-                        <header className="mb-8 text-center">
-                            <h1 className="text-3xl sm:text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 drop-shadow-sm">
-                                Ruleta de la Fortuna Arribística
-                            </h1>
-                            <p className="text-slate-500 mt-2">El juego del Rosco de Champions Leagues que lleva el Atleti</p>
-                        </header>
+        return (
+            <div className="min-h-screen p-4 sm:p-8 font-sans flex flex-col items-center relative overflow-hidden">
+                <div
+                    className="absolute inset-0 z-0 pointer-events-none"
+                    style={{
+                        backgroundImage: `url('${BACKGROUND_IMAGE}')`,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        backgroundAttachment: 'fixed',
+                        opacity: 0.1
+                    }}
+                />
 
-                        <div className="w-full max-w-3xl bg-white/95 rounded-3xl shadow-xl overflow-hidden border border-slate-200">
-                            <div className="bg-slate-100 p-4 border-b border-slate-200 flex justify-between items-center px-6">
-                                <div className="flex gap-6 items-center">
-                                    <div className="flex gap-4">
-                                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500"></div><span className="font-semibold">{stats.correct}</span></div>
-                                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500"></div><span className="font-semibold">{stats.incorrect}</span></div>
-                                        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-blue-500"></div><span className="font-semibold">{stats.remaining}</span></div>
+                <div className="relative z-10 w-full flex flex-col items-center">
+                    <header className="mb-8 text-center">
+                        <h1 className="text-3xl sm:text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 drop-shadow-sm">
+                            Ruleta de la Fortuna Arribística
+                        </h1>
+                        <p className="text-slate-500 mt-2">El juego del Rosco de Champions Leagues que lleva el
+                            Atleti</p>
+                    </header>
+
+                    <div
+                        className="w-full max-w-3xl bg-white/95 rounded-3xl shadow-xl overflow-hidden border border-slate-200">
+                        <div
+                            className="bg-slate-100 p-4 border-b border-slate-200 flex justify-between items-center px-6">
+                            <div className="flex gap-6 items-center">
+                                <div className="flex gap-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                                        <span className="font-semibold">{stats.correct}</span></div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                                        <span className="font-semibold">{stats.incorrect}</span></div>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                                        <span className="font-semibold">{stats.remaining}</span></div>
+                                </div>
+
+                                {gameState === 'playing' && (
+                                    <div
+                                        className={`flex items-center gap-2 px-3 py-1 rounded-full font-mono font-bold ${timeLeft < 30 ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-slate-200 text-slate-700'}`}>
+                                        <Clock size={16}/>
+                                        {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
                                     </div>
-
-                                    {gameState === 'playing' && (
-                                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full font-mono font-bold ${timeLeft < 30 ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-slate-200 text-slate-700'}`}>
-                                            <Clock size={16} />
-                                            {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex gap-2">
-                                    <button onClick={() => setIsMuted(!isMuted)} className="text-slate-500 hover:text-slate-700 transition-colors p-2 rounded-full hover:bg-slate-200" title={isMuted ? "Activar Sonido" : "Silenciar"}>
-                                        {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-                                    </button>
-                                    {gameState !== 'setup' && (
-                                            <button onClick={resetGame} className="text-slate-500 hover:text-slate-700 transition-colors p-2 rounded-full hover:bg-slate-200" title="Reiniciar Juego">
-                                                <RotateCcw size={20} />
-                                            </button>
-                                    )}
-                                </div>
+                                )}
                             </div>
 
-                            <div className="p-6 sm:p-8 flex flex-col md:flex-row gap-8 items-center justify-center">
-                                <div className="flex-shrink-0 w-full md:w-auto flex justify-center">
-                                    {renderCircle()}
-                                </div>
+                            <div className="flex gap-2">
+                                <button onClick={() => setIsMuted(!isMuted)}
+                                        className="text-slate-500 hover:text-slate-700 transition-colors p-2 rounded-full hover:bg-slate-200"
+                                        title={isMuted ? "Activar Sonido" : "Silenciar"}>
+                                    {isMuted ? <VolumeX size={20}/> : <Volume2 size={20}/>}
+                                </button>
+                                {gameState !== 'setup' && (
+                                    <button onClick={resetGame}
+                                            className="text-slate-500 hover:text-slate-700 transition-colors p-2 rounded-full hover:bg-slate-200"
+                                            title="Reiniciar Juego">
+                                        <RotateCcw size={20}/>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
 
-                                <div className="flex-1 w-full max-w-md flex flex-col justify-center min-h-[300px]">
-                                    {gameState === 'setup' && (
-                                            <div className="text-center space-y-6 fade-in">
-                                                <div className="p-6 bg-blue-50 rounded-2xl border border-blue-100">
-                                                    <h2 className="text-2xl font-bold text-blue-800 mb-4">¿Listo para jugar?</h2>
-                                                    <p className="text-slate-600 mb-6">
-                                                        Se te leerá una definición para cada letra. Indica si tu respuesta es correcta, incorrecta o di "Pasapalabra" para dejarla para la siguiente ronda.
-                                                    </p>
-                                                    <button
-                                                            onClick={startGame}
-                                                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 text-white font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5"
-                                                    >
-                                                        <Play size={20} />
-                                                        Comenzar Juego
-                                                    </button>
-                                                </div>
-                                            </div>
-                                    )}
+                        <div className="p-6 sm:p-8 flex flex-col md:flex-row gap-8 items-center justify-center">
+                            <div className="flex-shrink-0 w-full md:w-auto flex justify-center">
+                                {renderCircle()}
+                            </div>
 
-                                    {gameState === 'playing' && progress.length > 0 && (
-                                            <div className="flex flex-col h-full fade-in">
-                                                <div className="mb-6 flex flex-col sm:flex-row gap-4">
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <div className="flex items-baseline gap-3">
-                                                                <span className="text-5xl font-black text-yellow-500 drop-shadow-sm">
+                            <div className="flex-1 w-full max-w-md flex flex-col justify-center min-h-[300px]">
+                                {gameState === 'setup' && (
+                                    <div className="text-center space-y-6 fade-in">
+                                        <div className="p-6 bg-blue-50 rounded-2xl border border-blue-100">
+                                            <h2 className="text-2xl font-bold text-blue-800 mb-4">¿Listo para
+                                                jugar?</h2>
+                                            <p className="text-slate-600 mb-6">
+                                                Se te leerá una definición para cada letra. Indica si tu respuesta es
+                                                correcta, incorrecta o di "Pasapalabra" para dejarla para la siguiente
+                                                ronda.
+                                            </p>
+                                            <button
+                                                onClick={startGame}
+                                                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 text-white font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5"
+                                            >
+                                                <Play size={20}/>
+                                                Comenzar Juego
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {gameState === 'playing' && progress.length > 0 && (
+                                    <div className="flex flex-col h-full fade-in">
+                                        <div className="mb-6 flex flex-col sm:flex-row gap-4">
+                                            <div className="flex-1">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <div className="flex items-baseline gap-3">
+                                                                <span
+                                                                    className="text-5xl font-black text-yellow-500 drop-shadow-sm">
                                                                   {questions[currentIndex].letter}
                                                                 </span>
-                                                                <span className="text-sm font-bold uppercase tracking-wider px-3 py-1 bg-slate-100 text-slate-600 rounded-full">
+                                                        <span
+                                                            className="text-sm font-bold uppercase tracking-wider px-3 py-1 bg-slate-100 text-slate-600 rounded-full">
                                                                   {questions[currentIndex].questions[progress[currentIndex].currentQ].type === 'empieza' ? 'Empieza por' : 'Contiene la'}
                                                                 </span>
-                                                            </div>
-                                                            {questions[currentIndex].questions.length > 1 && (
-                                                                    <div className="text-sm font-bold text-orange-500 bg-orange-100 px-3 py-1 rounded-full">
-                                                                        {progress[currentIndex].currentQ + 1} / {questions[currentIndex].questions.length}
-                                                                    </div>
-                                                            )}
+                                                    </div>
+                                                    {questions[currentIndex].questions.length > 1 && (
+                                                        <div
+                                                            className="text-sm font-bold text-orange-500 bg-orange-100 px-3 py-1 rounded-full">
+                                                            {progress[currentIndex].currentQ + 1} / {questions[currentIndex].questions.length}
                                                         </div>
+                                                    )}
+                                                </div>
 
-                                                        <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-inner mt-4 min-h-[120px] flex flex-col justify-center gap-4">
-                                                            <p className="text-lg sm:text-xl font-medium leading-relaxed">
-                                                                "{questions[currentIndex].questions[progress[currentIndex].currentQ].question}"
-                                                            </p>
-                                                            <div className="p-3 bg-indigo-50 rounded-xl border border-indigo-100">
-                                                                <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider block mb-1">Respuesta esperada:</span>
-                                                                <span className="text-lg font-bold text-indigo-700">
+                                                <div
+                                                    className="bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-inner mt-4 min-h-[120px] flex flex-col justify-center gap-4">
+                                                    <p className="text-lg sm:text-xl font-medium leading-relaxed">
+                                                        "{questions[currentIndex].questions[progress[currentIndex].currentQ].question}"
+                                                    </p>
+                                                    <div
+                                                        className="p-3 bg-indigo-50 rounded-xl border border-indigo-100">
+                                                        <span
+                                                            className="text-xs font-bold text-indigo-400 uppercase tracking-wider block mb-1">Respuesta esperada:</span>
+                                                        <span className="text-lg font-bold text-indigo-700">
                                                                     {questions[currentIndex].questions[progress[currentIndex].currentQ].answer}
                                                                 </span>
-                                                            </div>
-                                                        </div>
                                                     </div>
-
-                                                    <div className="w-full sm:w-32 h-40 sm:h-auto flex-shrink-0">
-                                                        <div className="h-full bg-white p-2 rounded-xl shadow-md border border-slate-200 transform rotate-2 hover:rotate-0 transition-transform duration-300">
-                                                            <img
-                                                                src={FRIEND_IMAGES[currentPhotoIndex]}
-                                                                className="w-full h-full object-cover rounded shadow-inner"
-                                                                alt="El novio"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div className="mt-auto space-y-4">
-                                                    <div className="grid grid-cols-2 gap-4">
-                                                        <button onClick={() => handleAnswer(true)} className="group flex flex-col items-center justify-center p-4 bg-green-50 hover:bg-green-500 border-2 border-green-500 rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md">
-                                                            <div className="bg-green-500 group-hover:bg-white p-2 rounded-full mb-2 transition-colors">
-                                                                <Check size={24} className="text-white group-hover:text-green-600 transition-colors" />
-                                                            </div>
-                                                            <span className="font-bold text-green-700 group-hover:text-white transition-colors">Correcto</span>
-                                                        </button>
-                                                        <button onClick={() => handleAnswer(false)} className="group flex flex-col items-center justify-center p-4 bg-red-50 hover:bg-red-500 border-2 border-red-500 rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md">
-                                                            <div className="bg-red-500 group-hover:bg-white p-2 rounded-full mb-2 transition-colors">
-                                                                <X size={24} className="text-white group-hover:text-red-600 transition-colors" />
-                                                            </div>
-                                                            <span className="font-bold text-red-700 group-hover:text-white transition-colors">Incorrecto</span>
-                                                        </button>
-                                                    </div>
-                                                    <button onClick={handlePass} className="w-full flex items-center justify-center gap-2 p-4 bg-slate-100 hover:bg-blue-500 text-slate-700 hover:text-white border border-slate-300 hover:border-blue-500 rounded-2xl transition-all duration-200 font-bold text-lg">
-                                                        <SkipForward size={20} /> Pasapalabra
-                                                    </button>
                                                 </div>
                                             </div>
-                                    )}
 
-                                    {gameState === 'finished' && (
-                                            <div className="text-center space-y-6 fade-in w-full max-w-xl mx-auto">
-                                                <div className="p-8 bg-slate-50 rounded-3xl border border-slate-200 shadow-lg relative overflow-hidden">
-                                                    <div className="absolute top-0 right-0 p-4 opacity-10 transform rotate-12 scale-150">
-                                                        <img src={FRIEND_IMAGES[Math.floor(Math.random() * FRIEND_IMAGES.length)]} className="w-32 h-32 object-cover rounded-full" alt="" />
-                                                    </div>
-
-                                                    <h2 className="text-4xl font-black text-slate-800 mb-2 relative z-10">¡Juego Terminado!</h2>
-                                                    <p className="text-slate-500 mb-8 relative z-10">Aquí están tus resultados finales.</p>
-
-                                                    <div className="grid grid-cols-2 gap-4 mb-8">
-                                                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                                                            <span className="text-5xl font-black text-green-500 drop-shadow-sm">{stats.correct}</span>
-                                                            <span className="text-sm font-semibold uppercase tracking-wider text-slate-500 mt-2 block">Aciertos</span>
-                                                        </div>
-                                                        <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                                                            <span className="text-5xl font-black text-red-500 drop-shadow-sm">{stats.incorrect}</span>
-                                                            <span className="text-sm font-semibold uppercase tracking-wider text-slate-500 mt-2 block">Errores</span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="mb-8 flex justify-center">
-                                                        <div className="p-3 bg-white rounded-2xl shadow-xl border-4 border-white transform -rotate-2 hover:rotate-0 transition-transform duration-500 max-w-[200px]">
-                                                            <img
-                                                                src={FRIEND_IMAGES[currentPhotoIndex]}
-                                                                className="w-full h-auto rounded-lg"
-                                                                alt="Celebración"
-                                                            />
-                                                            <div className="mt-3 font-handwriting text-slate-400 text-xs italic">#CaminoAlAltar</div>
-                                                        </div>
-                                                    </div>
-
-                                                    <button onClick={resetGame} className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl shadow-md transition-all">
-                                                        <RotateCcw size={20} /> Volver a Jugar
-                                                    </button>
+                                            <div className="w-full sm:w-32 h-40 sm:h-auto flex-shrink-0">
+                                                <div
+                                                    className="h-full bg-white p-2 rounded-xl shadow-md border border-slate-200 transform rotate-2 hover:rotate-0 transition-transform duration-300">
+                                                    <img
+                                                        src={FRIEND_IMAGES[currentPhotoIndex]}
+                                                        className="w-full h-full object-cover rounded shadow-inner"
+                                                        alt="El novio"
+                                                    />
                                                 </div>
                                             </div>
-                                    )}
-                                </div>
+                                        </div>
+
+                                        <div className="mt-auto space-y-4">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <button onClick={() => handleAnswer(true)}
+                                                        className="group flex flex-col items-center justify-center p-4 bg-green-50 hover:bg-green-500 border-2 border-green-500 rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md">
+                                                    <div
+                                                        className="bg-green-500 group-hover:bg-white p-2 rounded-full mb-2 transition-colors">
+                                                        <Check size={24}
+                                                               className="text-white group-hover:text-green-600 transition-colors"/>
+                                                    </div>
+                                                    <span
+                                                        className="font-bold text-green-700 group-hover:text-white transition-colors">Correcto</span>
+                                                </button>
+                                                <button onClick={() => handleAnswer(false)}
+                                                        className="group flex flex-col items-center justify-center p-4 bg-red-50 hover:bg-red-500 border-2 border-red-500 rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md">
+                                                    <div
+                                                        className="bg-red-500 group-hover:bg-white p-2 rounded-full mb-2 transition-colors">
+                                                        <X size={24}
+                                                           className="text-white group-hover:text-red-600 transition-colors"/>
+                                                    </div>
+                                                    <span
+                                                        className="font-bold text-red-700 group-hover:text-white transition-colors">Incorrecto</span>
+                                                </button>
+                                            </div>
+                                            <button onClick={handlePass}
+                                                    className="w-full flex items-center justify-center gap-2 p-4 bg-slate-100 hover:bg-blue-500 text-slate-700 hover:text-white border border-slate-300 hover:border-blue-500 rounded-2xl transition-all duration-200 font-bold text-lg">
+                                                <SkipForward size={20}/> Pasapalabra
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {gameState === 'finished' && (
+                                    <div className="text-center space-y-6 fade-in w-full max-w-xl mx-auto">
+                                        <div
+                                            className="p-8 bg-slate-50 rounded-3xl border border-slate-200 shadow-lg relative overflow-hidden">
+                                            <div
+                                                className="absolute top-0 right-0 p-4 opacity-10 transform rotate-12 scale-150">
+                                                <img
+                                                    src={FRIEND_IMAGES[Math.floor(Math.random() * FRIEND_IMAGES.length)]}
+                                                    className="w-32 h-32 object-cover rounded-full" alt=""/>
+                                            </div>
+
+                                            <h2 className="text-4xl font-black text-slate-800 mb-2 relative z-10">¡Juego
+                                                Terminado!</h2>
+                                            <p className="text-slate-500 mb-8 relative z-10">Aquí están tus resultados
+                                                finales.</p>
+
+                                            <div className="grid grid-cols-2 gap-4 mb-8">
+                                                <div
+                                                    className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                                                    <span
+                                                        className="text-5xl font-black text-green-500 drop-shadow-sm">{stats.correct}</span>
+                                                    <span
+                                                        className="text-sm font-semibold uppercase tracking-wider text-slate-500 mt-2 block">Aciertos</span>
+                                                </div>
+                                                <div
+                                                    className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                                                    <span
+                                                        className="text-5xl font-black text-red-500 drop-shadow-sm">{stats.incorrect}</span>
+                                                    <span
+                                                        className="text-sm font-semibold uppercase tracking-wider text-slate-500 mt-2 block">Errores</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="mb-8 flex justify-center">
+                                                <div
+                                                    className="p-3 bg-white rounded-2xl shadow-xl border-4 border-white transform -rotate-2 hover:rotate-0 transition-transform duration-500 max-w-[200px]">
+                                                    <img
+                                                        src={FRIEND_IMAGES[currentPhotoIndex]}
+                                                        className="w-full h-auto rounded-lg"
+                                                        alt="Celebración"
+                                                    />
+                                                    <div
+                                                        className="mt-3 font-handwriting text-slate-400 text-xs italic">#CaminoAlAltar
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <button onClick={resetGame}
+                                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl shadow-md transition-all">
+                                                <RotateCcw size={20}/> Volver a Jugar
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
-                        <footer className="mt-8 text-center text-sm text-slate-600 bg-white/50 backdrop-blur-sm px-6 py-2 rounded-full relative z-10">
-                            Nota: En esta versión tú actúas como el presentador.
-                        </footer>
                     </div>
+                    <footer
+                        className="mt-8 text-center text-sm text-slate-600 bg-white/50 backdrop-blur-sm px-6 py-2 rounded-full relative z-10">
+                        Nota: En esta versión tú actúas como el presentador.
+                    </footer>
+                </div>
 
-                    {showJumpScare && (
-                        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm fade-in">
-                            <div className="relative animate-jump-scare">
-                                <img
-                                    src={WRONG_ANSWER_IMAGE}
-                                    className="max-h-[85vh] max-w-[90vw] rounded-3xl border-8 border-white shadow-[0_0_50px_rgba(239,68,68,0.5)]"
-                                    alt="¡INCORRECTO!"
-                                />
-                                <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-red-600 text-white px-8 py-2 rounded-full font-black text-2xl shadow-xl transform -rotate-2">
-                                    ¡INCORRECTO!
-                                </div>
+                {showJumpScare && (
+                    <div
+                        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm fade-in">
+                        <div className="relative animate-jump-scare">
+                            <img
+                                src={WRONG_ANSWER_IMAGE}
+                                className="max-h-[85vh] max-w-[90vw] rounded-3xl border-8 border-white shadow-[0_0_50px_rgba(239,68,68,0.5)]"
+                                alt="¡INCORRECTO!"
+                            />
+                            <div
+                                className="absolute -bottom-6 left-1/2 -translate-x-1/2 bg-red-600 text-white px-8 py-2 rounded-full font-black text-2xl shadow-xl transform -rotate-2">
+                                ¡INCORRECTO!
                             </div>
                         </div>
-                    )}
-                </div>
+                    </div>
+                )}
+            </div>
         );
     }
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<RoscoGame />);
+    root.render(<RoscoGame/>);
 </script>
 </body>
 </html>
