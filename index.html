@@ -77,13 +77,17 @@
     }
 
     const PROFILE = window.RouletteProfile;
-    const BACKGROUND_IMAGE = PROFILE.images.background;
-    let FRIEND_IMAGES = Array.isArray(PROFILE.images.friends) ? PROFILE.images.friends : [];
-    const WRONG_ANSWER_IMAGE = PROFILE.images.wrongAnswer;
+    let BACKGROUND_IMAGE = PROFILE.images?.background || null;
+    let FRIEND_IMAGES = Array.isArray(PROFILE.images?.friends) ? PROFILE.images.friends : [];
+    let WRONG_ANSWER_IMAGE = PROFILE.images?.wrongAnswer || null;
     const INITIAL_TIME = PROFILE.initialTime;
 
     function isSupportedImageFile(fileName) {
         return /\.(?:avif|gif|jpe?g|png|webp)$/i.test(fileName);
+    }
+
+    function isSupportedAudioFile(fileName) {
+        return /\.(?:m4a|mp3|mp4|mpeg|ogg|wav)$/i.test(fileName);
     }
 
     function buildAssetUrl(basePath, fileName) {
@@ -115,6 +119,20 @@
         return files.map(f => buildAssetUrl(basePath, f));
     }
 
+    async function loadFolderAudioFromDirectoryListing(basePath) {
+        // Requiere un servidor que devuelva HTML con <a href="..."> al acceder a una carpeta,
+        // como el server.js incluido en el proyecto (node server.js).
+        const r = await fetch(basePath);
+        if (!r.ok) return [];
+
+        const text = await r.text();
+        const files = [...text.matchAll(/<a[^>]*href="([^"?#]+\.(?:m4a|mp3|mp4|mpeg|ogg|wav))"/gi)]
+            .map(m => decodeURIComponent(m[1]).split('/').pop())
+            .filter(f => f && f !== '..' && f !== '.' && isSupportedAudioFile(f));
+
+        return files.map(f => buildAssetUrl(basePath, f));
+    }
+
     async function loadFolderImagesFromGitHubPages(basePath) {
         const repo = detectGitHubPagesRepo();
         if (!repo) return [];
@@ -134,6 +152,25 @@
             .map(entry => buildAssetUrl(basePath, entry.name));
     }
 
+    async function loadFolderAudioFromGitHubPages(basePath) {
+        const repo = detectGitHubPagesRepo();
+        if (!repo) return [];
+
+        const apiUrl = `https://api.github.com/repos/${repo.owner}/${repo.repo}/contents/${basePath.replace(/\/$/, '')}`;
+        const r = await fetch(apiUrl, {
+            headers: {Accept: 'application/vnd.github+json'}
+        });
+
+        if (!r.ok) return [];
+
+        const entries = await r.json();
+        if (!Array.isArray(entries)) return [];
+
+        return entries
+            .filter(entry => entry && entry.type === 'file' && isSupportedAudioFile(entry.name))
+            .map(entry => buildAssetUrl(basePath, entry.name));
+    }
+
     async function loadFolderImages(profileName, folder) {
         const basePath = `assets/images/${profileName}/${folder}/`;
 
@@ -150,12 +187,73 @@
         return [];
     }
 
+    async function loadFolderAudio(basePath) {
+        for (const loader of [
+            loadFolderAudioFromDirectoryListing,
+            loadFolderAudioFromGitHubPages
+        ]) {
+            try {
+                const urls = await loader(basePath);
+                if (urls.length > 0) return urls;
+            } catch (e) { /* siguiente estrategia */ }
+        }
+        return [];
+    }
+
+    async function loadSingleAudio(profileName, category, {fallbackToShared = false} = {}) {
+        const profileBase = `assets/audio/${profileName}/${category}/`;
+        const sharedBase = `assets/audio/shared/${category}/`;
+
+        const urls = await loadFolderAudio(profileBase);
+        if (urls.length > 0) return urls[0];
+
+        // Solo se usa fallback compartido para categorías que realmente lo necesitan.
+        if (fallbackToShared) {
+            const sharedUrls = await loadFolderAudio(sharedBase);
+            if (sharedUrls.length > 0) return sharedUrls[0];
+        }
+
+        return null;
+    }
+
+    async function loadSharedSingleAudio(category) {
+        const sharedBase = `assets/audio/shared/${category}/`;
+        const urls = await loadFolderAudio(sharedBase);
+        return urls[0] || null;
+    }
+
+    async function resolveProfileAudio(profileName) {
+        // Backwards-compatible: if a profile already specifies src, keep it.
+        // Otherwise auto-pick the first file in each category folder.
+        const audioCfg = PROFILE.audio || {};
+
+        const [introSrc, correctSrc, incorrectSrc, passSrc] = await Promise.all([
+            audioCfg.intro?.src ? Promise.resolve(audioCfg.intro.src) : loadSharedSingleAudio('intro'),
+            audioCfg.correct?.src ? Promise.resolve(audioCfg.correct.src) : loadSingleAudio(profileName, 'correct'),
+            // incorrect: solo desde assets/audio/<profile>/incorrect/ (nada compartido)
+            audioCfg.incorrect?.src ? Promise.resolve(audioCfg.incorrect.src) : loadSingleAudio(profileName, 'incorrect', {fallbackToShared: false}),
+            audioCfg.pass?.src ? Promise.resolve(audioCfg.pass.src) : loadSingleAudio(profileName, 'pass')
+        ]);
+
+        PROFILE.audio = {
+            intro:     { ...(audioCfg.intro || {}),     src: introSrc },
+            correct:   { ...(audioCfg.correct || {}),   src: correctSrc },
+            incorrect: { ...(audioCfg.incorrect || {}), src: incorrectSrc },
+            pass:      { ...(audioCfg.pass || {}),      src: passSrc }
+        };
+    }
+
     async function loadRandomPhotos(profileName) {
         const urls = await loadFolderImages(profileName, 'random');
         if (urls.length === 0) {
             console.warn(`No se encontraron fotos en assets/images/${profileName}/random/.`);
         }
         return urls;
+    }
+
+    async function loadSingleImage(profileName, folder) {
+        const urls = await loadFolderImages(profileName, folder);
+        return urls[0] || null;
     }
 
     // Carga las preguntas desde questions_and_answers/<name>.json
@@ -816,12 +914,19 @@
     }
 
     (async () => {
-        const [friends, questions] = await Promise.all([
+        const [friends, questions, background, wrongAnswer] = await Promise.all([
             FRIEND_IMAGES.length === 0 ? loadRandomPhotos(PROFILE.name) : Promise.resolve(FRIEND_IMAGES),
-            gameData.length === 0      ? loadQuestions(PROFILE.name)    : Promise.resolve(gameData)
+            gameData.length === 0      ? loadQuestions(PROFILE.name)    : Promise.resolve(gameData),
+            BACKGROUND_IMAGE ? Promise.resolve(BACKGROUND_IMAGE) : loadSingleImage(PROFILE.name, 'background'),
+            WRONG_ANSWER_IMAGE ? Promise.resolve(WRONG_ANSWER_IMAGE) : loadSingleImage(PROFILE.name, 'wrong_answer')
         ]);
+
         FRIEND_IMAGES = friends;
         gameData = questions;
+        BACKGROUND_IMAGE = background;
+        WRONG_ANSWER_IMAGE = wrongAnswer;
+
+        await resolveProfileAudio(PROFILE.name);
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<RoscoGame/>);

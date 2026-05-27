@@ -1,0 +1,417 @@
+[
+  {
+    "letter": "A",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Imperio precolombino conquistado por Hernán Cortés.",
+        "answer": "Azteca"
+      },
+      {
+        "type": "empieza",
+        "question": "Futbolista argentino histórico del Valencia y Benfica.",
+        "answer": "Aimar"
+      }
+    ]
+  },
+  {
+    "letter": "B",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Dinastía que reina en España desde el siglo XVIII.",
+        "answer": "Borbón"
+      },
+      {
+        "type": "empieza",
+        "question": "Jugador que anotó el primer gol europeo del Dépor.",
+        "answer": "Bebeto"
+      }
+    ]
+  },
+  {
+    "letter": "C",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Navegante que llegó a América en 1492.",
+        "answer": "Colón"
+      },
+      {
+        "type": "empieza",
+        "question": "Jugador con más goles en la historia de la Champions.",
+        "answer": "Cristiano"
+      }
+    ]
+  },
+  {
+    "letter": "CH",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Apodo del delantero mexicano Javier Hernández.",
+        "answer": "Chicharito"
+      }
+    ]
+  },
+  {
+    "letter": "D",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Sistema político donde gobierna el pueblo.",
+        "answer": "Democracia"
+      },
+      {
+        "type": "empieza",
+        "question": "Leyenda del Real Madrid previa a la era moderna.",
+        "answer": "Di Stéfano"
+      }
+    ]
+  },
+  {
+    "letter": "E",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Etapa histórica que comienza tras la caída de Constantinopla en 1453.",
+        "answer": "Edad Moderna"
+      },
+      {
+        "type": "empieza",
+        "question": "Delantero portugués Balón de Oro en 1965.",
+        "answer": "Eusébio"
+      }
+    ]
+  },
+  {
+    "letter": "F",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Dictador español tras la Guerra Civil.",
+        "answer": "Franco"
+      },
+      {
+        "type": "empieza",
+        "question": "Futbolista portugués Balón de Oro en el año 2000.",
+        "answer": "Figo"
+      }
+    ]
+  },
+  {
+    "letter": "G",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Conflicto español entre 1936 y 1939.",
+        "answer": "Guerra Civil"
+      },
+      {
+        "type": "empieza",
+        "question": "Jugador con 6 Copas de Europa como futbolista.",
+        "answer": "Gento"
+      }
+    ]
+  },
+  {
+    "letter": "H",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Casa real que gobernó España antes de los Borbones.",
+        "answer": "Habsburgo"
+      },
+      {
+        "type": "empieza",
+        "question": "Delantero francés histórico del Arsenal.",
+        "answer": "Henry"
+      }
+    ]
+  },
+  {
+    "letter": "I",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Imperio sudamericano conquistado por Pizarro.",
+        "answer": "Inca"
+      },
+      {
+        "type": "empieza",
+        "question": "Centrocampista español campeón del mundo en 2010.",
+        "answer": "Iniesta"
+      }
+    ]
+  },
+  {
+    "letter": "J",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Grupo político radical de la Revolución Francesa.",
+        "answer": "Jacobinos"
+      },
+      {
+        "type": "empieza",
+        "question": "Nombre del jugador del Real Madrid que marcó el gol contra el Atlético de Madrid para darle el pase a semifinales de Champions en 2015.",
+        "answer": "Javier Chicharito Hernández"
+      }
+    ]
+  },
+  {
+    "letter": "K",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Imperio africano relevante en la Edad Moderna.",
+        "answer": "Kanem"
+      },
+      {
+        "type": "empieza",
+        "question": "Máximo goleador histórico de los Mundiales.",
+        "answer": "Klose"
+      }
+    ]
+  },
+  {
+    "letter": "L",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Rey francés símbolo del absolutismo.",
+        "answer": "Luis XIV"
+      },
+      {
+        "type": "empieza",
+        "question": "Club europeo cuyo himno proviene originalmente del musical de Broadway Carousel.",
+        "answer": "Liverpool"
+      }
+    ]
+  },
+  {
+    "letter": "M",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Sistema económico europeo entre los siglos XVI y XVIII.",
+        "answer": "Mercantilismo"
+      },
+      {
+        "type": "empieza",
+        "question": "Jugador Bota de Oro en la temporada 2002-2003 cuyo equipo nunca había tenido una anteriormente.",
+        "answer": "Makaay"
+      },
+      {
+        "type": "empieza",
+        "question": "Ciudad donde Alejo pudo haber entrado en el cartel de la droga.",
+        "answer": "Medellin"
+      }
+    ]
+  },
+  {
+    "letter": "N",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Corriente política que desembocó en la Segunda Guerra Mundial.",
+        "answer": "Nazismo"
+      },
+      {
+        "type": "empieza",
+        "question": "Delantero brasileño que siempre va acompañado por sus colegas.",
+        "answer": "Neymar"
+      }
+    ]
+  },
+  {
+    "letter": "Ñ",
+    "questions": [
+      {
+        "type": "contiene",
+        "question": "Apellido del delantero mexicano Javier Hernández.",
+        "answer": "Hernández"
+      }
+    ]
+  },
+  {
+    "letter": "O",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Organización internacional creada en 1945.",
+        "answer": "ONU"
+      },
+      {
+        "type": "empieza",
+        "question": "Ganador del Balón de Oro en 2001 tras lograr un triplete ese año.",
+        "answer": "Owen"
+      }
+    ]
+  },
+  {
+    "letter": "P",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Conquistador del Imperio Inca.",
+        "answer": "Pizarro"
+      },
+      {
+        "type": "empieza",
+        "question": "Jugador que ha jugado con dos selecciones diferentes y da nombre a un premio de la FIFA.",
+        "answer": "Puskas"
+      }
+    ]
+  },
+  {
+    "letter": "Q",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Dinastía china que gobernó hasta 1912.",
+        "answer": "Qing"
+      },
+      {
+        "type": "empieza",
+        "question": "Futbolista español histórico del Barça.",
+        "answer": "Quini"
+      }
+    ]
+  },
+  {
+    "letter": "R",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Movimiento que derrocó la monarquía en Francia en 1789.",
+        "answer": "Revolución"
+      },
+      {
+        "type": "empieza",
+        "question": "Club de fútbol más grande de la historia.",
+        "answer": "Real Madrid"
+      }
+    ]
+  },
+  {
+    "letter": "S",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Conflicto mundial entre 1939 y 1945.",
+        "answer": "Segunda Guerra Mundial"
+      },
+      {
+        "type": "empieza",
+        "question": "Jugador con más partidos en la selección española.",
+        "answer": "Sergio Ramos"
+      }
+    ]
+  },
+  {
+    "letter": "T",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Tratado de 1494 entre España y Portugal.",
+        "answer": "Tordesillas"
+      },
+      {
+        "type": "empieza",
+        "question": "Máximo goleador histórico del Dépor en competiciones europeas.",
+        "answer": "Tristan"
+      }
+    ]
+  },
+  {
+    "letter": "U",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Organización política europea actual.",
+        "answer": "Unión Europea"
+      },
+      {
+        "type": "empieza",
+        "question": "Nombre de pila del club más grande del Reino Unido.",
+        "answer": "United"
+      }
+    ]
+  },
+  {
+    "letter": "V",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Reina británica del siglo XIX.",
+        "answer": "Victoria"
+      },
+      {
+        "type": "empieza",
+        "question": "Jugador del Dépor cuyo apellido empieza por V y fue el más joven en marcar con el club.",
+        "answer": "Valen"
+      }
+    ]
+  },
+  {
+    "letter": "W",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Presidente de Estados Unidos durante la Primera Guerra Mundial.",
+        "answer": "Wilson"
+      },
+      {
+        "type": "empieza",
+        "question": "Legendario portero nigeriano que jugó en España entre 1990 y 1996 y símbolo contra el racismo.",
+        "answer": "Willy Agbonavbare"
+      }
+    ]
+  },
+  {
+    "letter": "X",
+    "questions": [
+      {
+        "type": "contiene",
+        "question": "Rechazo al extranjero.",
+        "answer": "Xenofobia"
+      },
+      {
+        "type": "contiene",
+        "question": "Jugador español que marcó en una final de Champions que ganó su equipo.",
+        "answer": "Xabi Alonso"
+      }
+    ]
+  },
+  {
+    "letter": "Y",
+    "questions": [
+      {
+        "type": "empieza",
+        "question": "Conferencia clave tras la Segunda Guerra Mundial.",
+        "answer": "Yalta"
+      },
+      {
+        "type": "empieza",
+        "question": "Centrocampista marfileño que jugó en el Manchester City.",
+        "answer": "Yaya"
+      }
+    ]
+  },
+  {
+    "letter": "Z",
+    "questions": [
+      {
+        "type": "contiene",
+        "question": "Unión aduanera alemana del siglo XIX.",
+        "answer": "Zollverein"
+      },
+      {
+        "type": "contiene",
+        "question": "Jugador que ha jugado en más equipos diferentes de Champions League.",
+        "answer": "Zlatan"
+      }
+    ]
+  }
+]
