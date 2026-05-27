@@ -106,6 +106,8 @@
     }
 
     async function loadFolderImagesFromDirectoryListing(basePath) {
+        // GitHub Pages no devuelve listado de carpetas (evita 404s ruidosos).
+        if (detectGitHubPagesRepo()) return [];
         // Requiere un servidor que devuelva HTML con <a href="..."> al acceder a una carpeta,
         // como el server.js incluido en el proyecto (node server.js).
         const r = await fetch(basePath);
@@ -120,6 +122,8 @@
     }
 
     async function loadFolderAudioFromDirectoryListing(basePath) {
+        // GitHub Pages no devuelve listado de carpetas (evita 404s ruidosos).
+        if (detectGitHubPagesRepo()) return [];
         // Requiere un servidor que devuelva HTML con <a href="..."> al acceder a una carpeta,
         // como el server.js incluido en el proyecto (node server.js).
         const r = await fetch(basePath);
