@@ -1,16 +1,24 @@
-name: Generate asset manifests
+name: Deploy to GitHub Pages
 
 on:
   push:
     branches: [main]
-    paths:
-      - 'assets/**'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 jobs:
-  manifests:
+  deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -18,13 +26,14 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Generate manifests
+      - name: Generate asset manifests
         run: node scripts/generate-manifests.js
 
-      - name: Commit manifests if changed
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add assets/**/manifest.json
-          git diff --cached --quiet || git commit -m "chore: update asset manifests [skip ci]"
-          git push
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - uses: actions/deploy-pages@v4
+        id: deployment
