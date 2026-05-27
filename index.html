@@ -173,11 +173,11 @@
 
     async function loadFolderImages(profileName, folder) {
         const basePath = `assets/images/${profileName}/${folder}/`;
-
-        for (const loader of [
-            loadFolderImagesFromDirectoryListing,
-            loadFolderImagesFromGitHubPages
-        ]) {
+        const isGitHubPages = !!detectGitHubPagesRepo();
+        for (const loader of (isGitHubPages
+            ? [loadFolderImagesFromGitHubPages]
+            : [loadFolderImagesFromDirectoryListing, loadFolderImagesFromGitHubPages]
+        )) {
             try {
                 const urls = await loader(basePath);
                 if (urls.length > 0) return urls;
@@ -188,10 +188,11 @@
     }
 
     async function loadFolderAudio(basePath) {
-        for (const loader of [
-            loadFolderAudioFromDirectoryListing,
-            loadFolderAudioFromGitHubPages
-        ]) {
+        const isGitHubPages = !!detectGitHubPagesRepo();
+        for (const loader of (isGitHubPages
+            ? [loadFolderAudioFromGitHubPages]
+            : [loadFolderAudioFromDirectoryListing, loadFolderAudioFromGitHubPages]
+        )) {
             try {
                 const urls = await loader(basePath);
                 if (urls.length > 0) return urls;
