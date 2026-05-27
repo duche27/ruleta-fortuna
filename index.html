@@ -18,21 +18,7 @@
     <!-- Confetti para la victoria -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-    <!-- Perfil activo (runtime): se elige por dropdown o ?profile=... -->
-    <script>
-        (function () {
-            try {
-                const params = new URLSearchParams(window.location.search);
-                const fromQuery = params.get('profile');
-                const fromStorage = window.localStorage ? localStorage.getItem('roulette_profile') : null;
-                const profile = (fromQuery || fromStorage || 'arribas').trim();
-                if (window.localStorage) localStorage.setItem('roulette_profile', profile);
-                document.write('<script src="profiles/' + encodeURIComponent(profile) + '.js"><\\/script>');
-            } catch (e) {
-                document.write('<script src="profiles/arribas.js"><\\/script>');
-            }
-        })();
-    </script>
+    <!-- Perfil activo: se carga en runtime (dropdown o ?profile=...) -->
 
     <style>
         body {
@@ -80,20 +66,37 @@
 <script type="text/babel">
     const {useState, useEffect, useMemo} = React;
 
-    if (!window.RouletteProfile) {
-        document.getElementById('root').innerHTML =
-            '<div style="padding:2rem;font-family:sans-serif;color:#b91c1c">' +
-            '<h1>No hay perfil cargado</h1>' +
-            '<p>Edita el &lt;script src="profiles/..."&gt; en <code>index.html</code> para apuntar a un perfil válido.</p>' +
-            '</div>';
-        throw new Error('window.RouletteProfile is undefined');
+    let PROFILE = null;
+    let BACKGROUND_IMAGE = null;
+    let FRIEND_IMAGES = [];
+    let WRONG_ANSWER_IMAGE = null;
+    let INITIAL_TIME = 250;
+
+    function getSelectedProfileName() {
+        const params = new URLSearchParams(window.location.search);
+        const fromQuery = params.get('profile');
+        const fromStorage = window.localStorage ? localStorage.getItem('roulette_profile') : null;
+        const raw = (fromQuery || fromStorage || 'arribas');
+        return String(raw).trim() || 'arribas';
     }
 
-    const PROFILE = window.RouletteProfile;
-    let BACKGROUND_IMAGE = PROFILE.images?.background || null;
-    let FRIEND_IMAGES = Array.isArray(PROFILE.images?.friends) ? PROFILE.images.friends : [];
-    let WRONG_ANSWER_IMAGE = PROFILE.images?.wrongAnswer || null;
-    const INITIAL_TIME = PROFILE.initialTime;
+    async function loadScript(src) {
+        return new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = src;
+            s.async = false;
+            s.onload = () => resolve();
+            s.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+            document.head.appendChild(s);
+        });
+    }
+
+    async function ensureProfileLoaded() {
+        if (window.RouletteProfile) return;
+        const profile = getSelectedProfileName();
+        try { localStorage.setItem('roulette_profile', profile); } catch (e) { /* noop */ }
+        await loadScript(`profiles/${encodeURIComponent(profile)}.js`);
+    }
 
     function isSupportedImageFile(fileName) {
         return /\.(?:avif|gif|jpe?g|png|webp)$/i.test(fileName);
@@ -1007,6 +1010,22 @@
     }
 
     (async () => {
+        await ensureProfileLoaded();
+        if (!window.RouletteProfile) {
+            document.getElementById('root').innerHTML =
+                '<div style="padding:2rem;font-family:sans-serif;color:#b91c1c">' +
+                '<h1>No hay perfil cargado</h1>' +
+                '<p>Usa el selector de perfil o <code>?profile=...</code> para cargar un perfil válido.</p>' +
+                '</div>';
+            throw new Error('window.RouletteProfile is undefined');
+        }
+
+        PROFILE = window.RouletteProfile;
+        INITIAL_TIME = PROFILE.initialTime;
+        BACKGROUND_IMAGE = PROFILE.images?.background || null;
+        FRIEND_IMAGES = Array.isArray(PROFILE.images?.friends) ? PROFILE.images.friends : [];
+        WRONG_ANSWER_IMAGE = PROFILE.images?.wrongAnswer || null;
+
         const [friends, questions, background, wrongAnswer] = await Promise.all([
             FRIEND_IMAGES.length === 0 ? loadRandomPhotos(PROFILE.name) : Promise.resolve(FRIEND_IMAGES),
             gameData.length === 0      ? loadQuestions(PROFILE.name)    : Promise.resolve(gameData),
