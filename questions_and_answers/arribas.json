@@ -1,0 +1,180 @@
+[
+  {
+    "letter": "A",
+    "questions": [
+      { "type": "empieza", "question": "El mejor club de barrio, el más humilde y luchador que está siempre perseguido y en el punto de mira de árbitros, liga y medios de comunicación:", "answer": "Atleti." }
+    ]
+  },
+  {
+    "letter": "B",
+    "questions": [
+      { "type": "empieza", "question": "Acción agresiva realizada por primera vez por Adrián, más tarde por Arribas que puede poner firme a un amigo:", "answer": "Buco." }
+    ]
+  },
+  {
+    "letter": "C",
+    "questions": [
+      { "type": "empieza", "question": "Nacho te llama así de forma cariñosa:", "answer": "Chache" },
+      { "type": "empieza", "question": "Accesorio imprescindible de Guillermo Najas entre los meses de febrero y noviembre:", "answer": "Chanclas" },
+      { "type": "empieza", "question": "Cosa mas loca que has hecho por amor:", "answer": "Curso prematrimonial/Comunión (si dice uno, es el otro) 🥃" }
+    ]
+  },
+  {
+    "letter": "CH",
+    "questions": [
+      { "type": "empieza", "question": "Secta y filosofía que impone un estilo de vida desde 2011 basada en la disciplina, el esfuerzo innegociable, la solidez y la mentalidad competitiva:", "answer": "Cholismo" }
+    ]
+  },
+  {
+    "letter": "D",
+    "questions": [
+      { "type": "empieza", "question": "Trofeo que se alzó el 24 de mayo de 2014 en el Estadio da Luz de Lisboa:", "answer": "Décima" }
+    ]
+  },
+  {
+    "letter": "E",
+    "questions": [
+      { "type": "empieza", "question": "Nacho te partió una en la cabeza:", "answer": "Espada láser" },
+      { "type": "empieza", "question": "Herramienta informática sin la que no podrias vivir:", "answer": "Excel" }
+    ]
+  },
+  {
+    "letter": "F",
+    "questions": [
+      { "type": "empieza", "question": "Pablo Javaloyes.", "answer": "Farfollas" },
+      { "type": "empieza", "question": "Expresión canaria que debes usar cuando algo huele especialmente mal.", "answer": "Fos" }
+    ]
+  },
+  {
+    "letter": "G",
+    "questions": [
+      { "type": "empieza", "question": "Un presidente, un icono de la España de los 90 y un auténtico mafioso:", "answer": "Gil" },
+      { "type": "empieza", "question": "Amigo y magnífico jugador que te llevó de la mano a recuperar la confianza en el Tomavistas.", "answer": "Gui" }
+    ]
+  },
+  {
+    "letter": "H",
+    "questions": [
+      { "type": "empieza", "question": "Pablo Javaloyes lo es:", "answer": "Hijo del metodo científico" },
+      { "type": "empieza", "question": "Barrio que vio nacer al inventor del atletismo moderno.", "answer": "Hortaleza" }
+    ]
+  },
+  {
+    "letter": "I",
+    "questions": [
+      { "type": "empieza", "question": "Numero de veces que te has enamorado:", "answer": "Infinitas" }
+    ]
+  },
+  {
+    "letter": "J",
+    "questions": [
+      { "type": "empieza", "question": "Acuerdate al poco de estar conmigo antes fumabas:", "answer": "Juan Javaloyes" },
+      { "type": "empieza", "question": "\"Eso eso, que se J\"", "answer": "jodan" }
+    ]
+  },
+  {
+    "letter": "K",
+    "questions": [
+      { "type": "empieza", "question": "Ostenta el mayor numero de partidos jugados con la elástica rojiblanca:", "answer": "Koke" }
+    ]
+  },
+  {
+    "letter": "L",
+    "questions": [
+      { "type": "empieza", "question": "Nombre de la verdadera princesa de la casa, receptora oficial de tus mimos y besos, y principal motivo por el que Marina sospecha que en la relación hay un triángulo amoroso:", "answer": "Leeloo" }
+    ]
+  },
+  {
+    "letter": "M",
+    "questions": [
+      { "type": "empieza", "question": "El verdadero 7 de España:", "answer": "Morata." },
+      { "type": "empieza", "question": "Capacidad para 70.692 personas:", "answer": "Metropolitano" }
+    ]
+  },
+  {
+    "letter": "N",
+    "questions": [
+      { "type": "empieza", "question": "Comida que te encanta y con la que siempre encareces la cuenta en un restaurante:", "answer": "Nécoras" }
+    ]
+  },
+  {
+    "letter": "Ñ",
+    "questions": [
+      { "type": "contiene", "question": "Marie Curie lo fue de pequeña:", "answer": "Niña Polaca" }
+    ]
+  },
+  {
+    "letter": "O",
+    "questions": [
+      { "type": "empieza", "question": "Característica genética de los Arribas: si alguien propone una escapada improvisada, ellos ya tienen Excel, reserva y menú cerrado de madrugada.", "answer": "Organizados" }
+    ]
+  },
+  {
+    "letter": "P",
+    "questions": [
+      { "type": "empieza", "question": "Por muchas clases que hagas, no hay forma de mejorar:", "answer": "Padel" }
+    ]
+  },
+  {
+    "letter": "Q",
+    "questions": [
+      { "type": "empieza", "question": "Existen formas y formas de ser rechazado por una mujer, ¿Con qué ya histórica frase se terminaron tus intenciones de ligar aquella fatídica noche de 2016?:", "answer": "¿Quién es usted?" }
+    ]
+  },
+  {
+    "letter": "R",
+    "questions": [
+      { "type": "empieza", "question": "Es futbolista y posiblemente uno de los jugadores más odiados por el colchonero medio:", "answer": "Ramos / Ronaldo (si dice uno, es el otro) 🥃" },
+      { "type": "empieza", "question": "Termino utilizado comúnmente para describir regiones costeras mediterráneas caracterizadas por ser soleadas, pintorescas y turísticas:", "answer": "Riviera" }
+    ]
+  },
+  {
+    "letter": "S",
+    "questions": [
+      { "type": "empieza", "question": "Compartes cosas con el pichichi de la segunda división. Su nombre empieza por ‘s’:", "answer": "Sergio Arribas." }
+    ]
+  },
+  {
+    "letter": "T",
+    "questions": [
+      { "type": "empieza", "question": "Tu habilidad olimpica mas destacable, el salto al:", "answer": "Tranvia" }
+    ]
+  },
+  {
+    "letter": "U",
+    "questions": [
+      { "type": "empieza", "question": "Con la U. El mejor disfraz grupal de este año en el carnaval.", "answer": "Umpa lumpa" }
+    ]
+  },
+  {
+    "letter": "V",
+    "questions": [
+      { "type": "empieza", "question": "¿Quién dijo la frase célebre: “Eu farei 10x se for preciso. Eles não estão preparados”?:", "answer": "Vinicius Jr" },
+      { "type": "empieza", "question": "Banda sonora de la ruina emocional y la dopamina en combustión, cuando estás “cabezabajo” pensando en la vida moderna y la desilusión, pero aun así te lo pones en repetición:", "answer": "Veintiuno" }
+    ]
+  },
+  {
+    "letter": "W",
+    "questions": [
+      { "type": "empieza", "question": "Tanto por ella como por el estadio han ‘pasado’ futbolistas famosos:", "answer": "Wanda" }
+    ]
+  },
+  {
+    "letter": "X",
+    "questions": [
+      { "type": "contiene", "question": "Vehículo nocturno que, tras tres trayectos seguidos y mucha conversación improvisada, convirtió un simple encuentro en el inicio de tu historia de amor más inesperada:", "answer": "Taxi" }
+    ]
+  },
+  {
+    "letter": "Y",
+    "questions": [
+      { "type": "empieza", "question": "En muchas ocasiones te ‘sales’ de este grupo. Luego vuelves con el rabo entre las piernas rogando por favor que se te vuelva a meter. Esto es un aviso. ¿Nombre del grupo?:", "answer": "Ya" }
+    ]
+  },
+  {
+    "letter": "Z",
+    "questions": [
+      { "type": "contiene", "question": "Tu debilidad gastronómica sin explicación y que siempre acaba ganando cualquier decisión, aunque haya cinco opciones mejores en la selección:", "answer": "Arroz" }
+    ]
+  }
+]
