@@ -94,115 +94,47 @@
         return `${basePath}${encodeURIComponent(fileName)}`;
     }
 
-    function detectGitHubPagesRepo() {
-        const {hostname, pathname} = window.location;
-        if (!hostname.endsWith('.github.io')) return null;
-
-        const owner = hostname.replace(/\.github\.io$/, '');
-        const pathParts = pathname.split('/').filter(Boolean);
-        const repo = pathParts[0] || `${owner}.github.io`;
-
-        return {owner, repo};
+    async function loadFromManifest(basePath, supportedFn) {
+        const r = await fetch(`${basePath}manifest.json`);
+        if (!r.ok) return [];
+        const data = await r.json();
+        const files = Array.isArray(data) ? data : (data.files || []);
+        return files.filter(supportedFn).map(f => buildAssetUrl(basePath, f));
     }
 
-    async function loadFolderImagesFromDirectoryListing(basePath) {
-        // GitHub Pages no devuelve listado de carpetas (evita 404s ruidosos).
-        if (detectGitHubPagesRepo()) return [];
-        // Requiere un servidor que devuelva HTML con <a href="..."> al acceder a una carpeta,
-        // como el server.js incluido en el proyecto (node server.js).
+    async function loadFromDirectoryListing(basePath, regex) {
         const r = await fetch(basePath);
         if (!r.ok) return [];
-
         const text = await r.text();
-        const files = [...text.matchAll(/<a[^>]*href="([^"?#]+\.(?:avif|gif|jpe?g|png|webp))"/gi)]
+        const files = [...text.matchAll(new RegExp(`<a[^>]*href="([^"?#]+${regex.source})"`, 'gi'))]
             .map(m => decodeURIComponent(m[1]).split('/').pop())
-            .filter(f => f && f !== '..' && f !== '.' && isSupportedImageFile(f));
-
+            .filter(f => f && f !== '..' && f !== '.');
         return files.map(f => buildAssetUrl(basePath, f));
     }
 
-    async function loadFolderAudioFromDirectoryListing(basePath) {
-        // GitHub Pages no devuelve listado de carpetas (evita 404s ruidosos).
-        if (detectGitHubPagesRepo()) return [];
-        // Requiere un servidor que devuelva HTML con <a href="..."> al acceder a una carpeta,
-        // como el server.js incluido en el proyecto (node server.js).
-        const r = await fetch(basePath);
-        if (!r.ok) return [];
+    async function loadFolderAssets(basePath, supportedFn, listingRegex) {
+        // 1. manifest.json (works everywhere, no rate limits)
+        try {
+            const urls = await loadFromManifest(basePath, supportedFn);
+            if (urls.length > 0) return urls;
+        } catch (e) { /* no manifest */ }
 
-        const text = await r.text();
-        const files = [...text.matchAll(/<a[^>]*href="([^"?#]+\.(?:m4a|mp3|mp4|mpeg|ogg|wav))"/gi)]
-            .map(m => decodeURIComponent(m[1]).split('/').pop())
-            .filter(f => f && f !== '..' && f !== '.' && isSupportedAudioFile(f));
+        // 2. local dev directory listing (only works with node server.js)
+        try {
+            const urls = await loadFromDirectoryListing(basePath, listingRegex);
+            if (urls.length > 0) return urls;
+        } catch (e) { /* no directory listing */ }
 
-        return files.map(f => buildAssetUrl(basePath, f));
-    }
-
-    async function loadFolderImagesFromGitHubPages(basePath) {
-        const repo = detectGitHubPagesRepo();
-        if (!repo) return [];
-
-        const apiUrl = `https://api.github.com/repos/${repo.owner}/${repo.repo}/contents/${basePath.replace(/\/$/, '')}`;
-        const r = await fetch(apiUrl, {
-            headers: {Accept: 'application/vnd.github+json'}
-        });
-
-        if (!r.ok) return [];
-
-        const entries = await r.json();
-        if (!Array.isArray(entries)) return [];
-
-        return entries
-            .filter(entry => entry && entry.type === 'file' && isSupportedImageFile(entry.name))
-            .map(entry => buildAssetUrl(basePath, entry.name));
-    }
-
-    async function loadFolderAudioFromGitHubPages(basePath) {
-        const repo = detectGitHubPagesRepo();
-        if (!repo) return [];
-
-        const apiUrl = `https://api.github.com/repos/${repo.owner}/${repo.repo}/contents/${basePath.replace(/\/$/, '')}`;
-        const r = await fetch(apiUrl, {
-            headers: {Accept: 'application/vnd.github+json'}
-        });
-
-        if (!r.ok) return [];
-
-        const entries = await r.json();
-        if (!Array.isArray(entries)) return [];
-
-        return entries
-            .filter(entry => entry && entry.type === 'file' && isSupportedAudioFile(entry.name))
-            .map(entry => buildAssetUrl(basePath, entry.name));
+        return [];
     }
 
     async function loadFolderImages(profileName, folder) {
         const basePath = `assets/images/${profileName}/${folder}/`;
-        const isGitHubPages = !!detectGitHubPagesRepo();
-        for (const loader of (isGitHubPages
-            ? [loadFolderImagesFromGitHubPages]
-            : [loadFolderImagesFromDirectoryListing, loadFolderImagesFromGitHubPages]
-        )) {
-            try {
-                const urls = await loader(basePath);
-                if (urls.length > 0) return urls;
-            } catch (e) { /* siguiente estrategia */ }
-        }
-
-        return [];
+        return loadFolderAssets(basePath, isSupportedImageFile, /\.(?:avif|gif|jpe?g|png|webp)/i);
     }
 
     async function loadFolderAudio(basePath) {
-        const isGitHubPages = !!detectGitHubPagesRepo();
-        for (const loader of (isGitHubPages
-            ? [loadFolderAudioFromGitHubPages]
-            : [loadFolderAudioFromDirectoryListing, loadFolderAudioFromGitHubPages]
-        )) {
-            try {
-                const urls = await loader(basePath);
-                if (urls.length > 0) return urls;
-            } catch (e) { /* siguiente estrategia */ }
-        }
-        return [];
+        return loadFolderAssets(basePath, isSupportedAudioFile, /\.(?:m4a|mp3|mp4|mpeg|ogg|wav)/i);
     }
 
     async function loadSingleAudio(profileName, category, {fallbackToShared = false} = {}) {

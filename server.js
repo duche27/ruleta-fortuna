@@ -1,13 +1,11 @@
 // Servidor local para ruleta-fortuna.
-// Sirve ficheros estáticos Y genera listados de directorio que el juego puede parsear.
+// Sirve ficheros estáticos y genera manifest.json por carpeta de assets.
 //
 // Uso:  node server.js
 // Luego abre http://localhost:8080 en el navegador.
 //
-// Por qué existe esto: los navegadores no pueden listar el contenido de una carpeta
-// por sí solos; necesitan que el servidor devuelva un HTML con los enlaces.
-// Con este servidor basta con soltar imágenes en assets/images/<perfil>/random/ y
-// el juego las detecta automáticamente sin necesitar ningún manifest.json.
+// Suelta recursos en assets/images/<perfil>/... o assets/audio/<perfil>/...
+// y recarga el navegador; los manifiestos se actualizan solos al arrancar.
 
 const http = require('http');
 const fs   = require('fs');
@@ -74,7 +72,8 @@ http.createServer((req, res) => {
     fs.createReadStream(filePath).pipe(res);
 
 }).listen(PORT, '127.0.0.1', () => {
+    try { require('./scripts/generate-manifests'); } catch (e) { /* opcional */ }
     console.log(`\nServidor arriba → http://localhost:${PORT}\n`);
-    console.log('Suelta imágenes en assets/images/<perfil>/random/ y recarga el navegador.');
+    console.log('Suelta recursos en assets/ y recarga el navegador.');
     console.log('Ctrl+C para parar.\n');
 });
