@@ -18,6 +18,9 @@
     <!-- Confetti para la victoria -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
+    <!-- Perfil activo: cambia esta línea para usar otro amigo (ver profiles/example.js) -->
+    <script src="profiles/arribas.js"></script>
+
     <style>
         body {
             margin: 0;
@@ -64,21 +67,159 @@
 <script type="text/babel">
     const {useState, useEffect, useMemo} = React;
 
-    const BACKGROUND_IMAGE = "assets/images/background.png";
-    const FRIEND_IMAGES = [
-        "assets/images/random/WhatsApp Image 2026-05-21 at 17.13.24.jpeg",
-        "assets/images/random/WhatsApp Image 2026-05-21 at 17.18.57 (1).jpeg",
-        "assets/images/random/WhatsApp Image 2026-05-21 at 17.18.57.jpeg",
-        "assets/images/random/WhatsApp Image 2026-05-21 at 17.19.26.jpeg",
-        "assets/images/random/WhatsApp Image 2026-05-21 at 17.19.27.jpeg",
-        "assets/images/random/WhatsApp Image 2026-05-21 at 17.20.46.jpeg",
-        "assets/images/random/WhatsApp Image 2026-05-21 at 17.23.23.jpeg",
-        "assets/images/random/WhatsApp Image 2026-05-21 at 17.23.30.jpeg"
-    ];
-    const WRONG_ANSWER_IMAGE = "assets/images/random/WhatsApp Image 2026-05-21 at 17.23.37.jpeg";
-    const INTRO_AUDIO = "assets/audio/intro_50x15.mp4";
-    const PASAPALABRA_AUDIO = "assets/audio/pasapalabra_partido_a_partido.mpeg";
-    const INITIAL_TIME = 250;
+    if (!window.RouletteProfile) {
+        document.getElementById('root').innerHTML =
+            '<div style="padding:2rem;font-family:sans-serif;color:#b91c1c">' +
+            '<h1>No hay perfil cargado</h1>' +
+            '<p>Edita el &lt;script src="profiles/..."&gt; en <code>index.html</code> para apuntar a un perfil válido.</p>' +
+            '</div>';
+        throw new Error('window.RouletteProfile is undefined');
+    }
+
+    const PROFILE = window.RouletteProfile;
+    const BACKGROUND_IMAGE = PROFILE.images.background;
+    let FRIEND_IMAGES = Array.isArray(PROFILE.images.friends) ? PROFILE.images.friends : [];
+    const WRONG_ANSWER_IMAGE = PROFILE.images.wrongAnswer;
+    const INITIAL_TIME = PROFILE.initialTime;
+
+    function isSupportedImageFile(fileName) {
+        return /\.(?:avif|gif|jpe?g|png|webp)$/i.test(fileName);
+    }
+
+    function buildAssetUrl(basePath, fileName) {
+        return `${basePath}${encodeURIComponent(fileName)}`;
+    }
+
+    function detectGitHubPagesRepo() {
+        const {hostname, pathname} = window.location;
+        if (!hostname.endsWith('.github.io')) return null;
+
+        const owner = hostname.replace(/\.github\.io$/, '');
+        const pathParts = pathname.split('/').filter(Boolean);
+        const repo = pathParts[0] || `${owner}.github.io`;
+
+        return {owner, repo};
+    }
+
+    async function loadFolderImagesFromDirectoryListing(basePath) {
+        // Requiere un servidor que devuelva HTML con <a href="..."> al acceder a una carpeta,
+        // como el server.js incluido en el proyecto (node server.js).
+        const r = await fetch(basePath);
+        if (!r.ok) return [];
+
+        const text = await r.text();
+        const files = [...text.matchAll(/<a[^>]*href="([^"?#]+\.(?:avif|gif|jpe?g|png|webp))"/gi)]
+            .map(m => decodeURIComponent(m[1]).split('/').pop())
+            .filter(f => f && f !== '..' && f !== '.' && isSupportedImageFile(f));
+
+        return files.map(f => buildAssetUrl(basePath, f));
+    }
+
+    async function loadFolderImagesFromGitHubPages(basePath) {
+        const repo = detectGitHubPagesRepo();
+        if (!repo) return [];
+
+        const apiUrl = `https://api.github.com/repos/${repo.owner}/${repo.repo}/contents/${basePath.replace(/\/$/, '')}`;
+        const r = await fetch(apiUrl, {
+            headers: {Accept: 'application/vnd.github+json'}
+        });
+
+        if (!r.ok) return [];
+
+        const entries = await r.json();
+        if (!Array.isArray(entries)) return [];
+
+        return entries
+            .filter(entry => entry && entry.type === 'file' && isSupportedImageFile(entry.name))
+            .map(entry => buildAssetUrl(basePath, entry.name));
+    }
+
+    async function loadFolderImages(profileName, folder) {
+        const basePath = `assets/images/${profileName}/${folder}/`;
+
+        for (const loader of [
+            loadFolderImagesFromDirectoryListing,
+            loadFolderImagesFromGitHubPages
+        ]) {
+            try {
+                const urls = await loader(basePath);
+                if (urls.length > 0) return urls;
+            } catch (e) { /* siguiente estrategia */ }
+        }
+
+        return [];
+    }
+
+    async function loadRandomPhotos(profileName) {
+        const urls = await loadFolderImages(profileName, 'random');
+        if (urls.length === 0) {
+            console.warn(`No se encontraron fotos en assets/images/${profileName}/random/.`);
+        }
+        return urls;
+    }
+
+    // Carga las preguntas desde questions_and_answers/<name>.json
+    async function loadQuestions(profileName) {
+        try {
+            const r = await fetch(`questions_and_answers/${profileName}.json`);
+            if (r.ok) return await r.json();
+        } catch (e) { /* archivo no encontrado */ }
+        console.warn(`No se encontraron preguntas en questions_and_answers/${profileName}.json`);
+        return [];
+    }
+
+    // Audio is single-channel: starting a sound stops the previous one.
+    let CURRENT_AUDIO = null;
+
+    const stopCurrentAudio = () => {
+        if (!CURRENT_AUDIO) return;
+        try {
+            if (CURRENT_AUDIO.__cutoffHandler) {
+                CURRENT_AUDIO.removeEventListener('timeupdate', CURRENT_AUDIO.__cutoffHandler);
+                CURRENT_AUDIO.__cutoffHandler = null;
+            }
+            CURRENT_AUDIO.pause();
+            CURRENT_AUDIO.currentTime = 0;
+        } catch (e) { /* noop */ }
+        CURRENT_AUDIO = null;
+    };
+
+    const playSound = (key, isMuted) => {
+        if (isMuted) {
+            stopCurrentAudio();
+            return null;
+        }
+
+        const cfg = PROFILE.audio && PROFILE.audio[key];
+        if (!cfg || !cfg.src) return null;
+
+        stopCurrentAudio();
+
+        try {
+            const audio = new Audio(cfg.src);
+            audio.volume = cfg.volume != null ? cfg.volume : 0.7;
+
+            if (cfg.cutoffAt) {
+                const cutoffHandler = function () {
+                    if (this.currentTime >= cfg.cutoffAt) {
+                        try { this.pause(); this.currentTime = 0; } catch (e) { /* noop */ }
+                        this.removeEventListener('timeupdate', cutoffHandler);
+                        this.__cutoffHandler = null;
+                        if (CURRENT_AUDIO === this) CURRENT_AUDIO = null;
+                    }
+                };
+                audio.__cutoffHandler = cutoffHandler;
+                audio.addEventListener('timeupdate', cutoffHandler);
+            }
+
+            CURRENT_AUDIO = audio;
+            audio.play().catch(e => console.log('Audio bloqueado por navegador', e));
+            return audio;
+        } catch (e) {
+            CURRENT_AUDIO = null;
+            return null;
+        }
+    };
 
     // --- ICONOS ---
     const Play = ({size = 24}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" stroke="none">
@@ -128,252 +269,7 @@
         <polyline points="12 6 12 12 16 14"/>
     </svg>;
 
-    // --- DATOS DEL JUEGO ---
-    const gameData = [
-        {
-            letter: 'A',
-            questions: [{
-                type: 'empieza',
-                question: 'El mejor club de barrio, el más humilde y luchador que está siempre perseguido y en el punto de mira de árbitros, liga y medios de comunicación:',
-                answer: 'Atleti.'
-            }]
-        },
-        {
-            letter: 'B',
-            questions: [{
-                type: 'empieza',
-                question: 'Acción agresiva realizada por primera vez por Adrián, más tarde por Arribas que puede poner firme a un amigo:',
-                answer: 'Buco.'
-            }]
-        },
-        {
-            letter: 'C', questions: [
-                {type: 'empieza', question: 'Nacho te llama así de forma cariñosa:', answer: 'Chache'},
-                {
-                    type: 'empieza',
-                    question: 'Accesorio imprescindible de Guillermo Najas entre los meses de febrero y noviembre:',
-                    answer: 'Chanclas'
-                },
-                {
-                    type: 'empieza',
-                    question: 'Cosa mas loca que has hecho por amor:',
-                    answer: 'Curso prematrimonial/Comunión (si dice uno, es el otro) 🥃'
-                }
-            ]
-        },
-        {
-            letter: 'CH',
-            questions: [{
-                type: 'empieza',
-                question: 'Secta y filosofía que impone un estilo de vida desde 2011 basada en la disciplina, el esfuerzo innegociable, la solidez y la mentalidad competitiva:',
-                answer: 'Cholismo'
-            }]
-        },
-        {
-            letter: 'D',
-            questions: [{
-                type: 'empieza',
-                question: 'Trofeo que se alzó el 24 de mayo de 2014 en el Estadio da Luz de Lisboa:',
-                answer: 'Décima'
-            }]
-        },
-        {
-            letter: 'E', questions: [
-                {type: 'empieza', question: 'Nacho te partió una en la cabeza:', answer: 'Espada láser'},
-                {type: 'empieza', question: 'Herramienta informática sin la que no podrias vivir:', answer: 'Excel'}
-            ]
-        },
-        {
-            letter: 'F', questions: [
-                {type: 'empieza', question: 'Pablo Javaloyes.', answer: 'Farfollas'},
-                {
-                    type: 'empieza',
-                    question: 'Expresión canaria que debes usar cuando algo huele especialmente mal.',
-                    answer: 'Fos'
-                }
-            ]
-        },
-        {
-            letter: 'G', questions: [
-                {
-                    type: 'empieza',
-                    question: 'Un presidente, un icono de la España de los 90 y un auténtico mafioso:',
-                    answer: 'Gil'
-                },
-                {
-                    type: 'empieza',
-                    question: 'Amigo y magnífico jugador que te llevó de la mano a recuperar la confianza en el Tomavistas.',
-                    answer: 'Gui'
-                }
-            ]
-        },
-        {
-            letter: 'H', questions: [
-                {type: 'empieza', question: 'Pablo Javaloyes lo es:', answer: 'Hijo del metodo científico'},
-                {
-                    type: 'empieza',
-                    question: 'Barrio que vio nacer al inventor del atletismo moderno.',
-                    answer: 'Hortaleza'
-                }
-            ]
-        },
-        {
-            letter: 'I',
-            questions: [{type: 'empieza', question: 'Numero de veces que te has enamorado:', answer: 'Infinitas'}]
-        },
-        {
-            letter: 'J', questions: [
-                {
-                    type: 'empieza',
-                    question: 'Acuerdate al poco de estar conmigo antes fumabas:',
-                    answer: 'Juan Javaloyes'
-                },
-                {type: 'empieza', question: '"Eso eso, que se J"', answer: 'jodan'}
-            ]
-        },
-        {
-            letter: 'K',
-            questions: [{
-                type: 'empieza',
-                question: 'Ostenta el mayor numero de partidos jugados con la elástica rojiblanca:',
-                answer: 'Koke'
-            }]
-        },
-        {
-            letter: 'L',
-            questions: [{
-                type: 'empieza',
-                question: 'Nombre de la verdadera princesa de la casa, receptora oficial de tus mimos y besos, y principal motivo por el que Marina sospecha que en la relación hay un triángulo amoroso:',
-                answer: 'Leeloo'
-            }]
-        },
-        {
-            letter: 'M', questions: [
-                {type: 'empieza', question: 'El verdadero 7 de España:', answer: 'Morata.'},
-                {type: 'empieza', question: 'Capacidad para 70.692 personas:', answer: 'Metropolitano'}
-            ]
-        },
-        {
-            letter: 'N',
-            questions: [{
-                type: 'empieza',
-                question: 'Comida que te encanta y con la que siempre encareces la cuenta en un restaurante:',
-                answer: 'Nécoras'
-            }]
-        },
-        {
-            letter: 'Ñ',
-            questions: [{type: 'contiene', question: 'Marie Curie lo fue de pequeña:', answer: 'Niña Polaca'}]
-        },
-        {
-            letter: 'O',
-            questions: [{
-                type: 'empieza',
-                question: 'Característica genética de los Arribas: si alguien propone una escapada improvisada, ellos ya tienen Excel, reserva y menú cerrado de madrugada.',
-                answer: 'Organizados'
-            }]
-        },
-        {
-            letter: 'P',
-            questions: [{
-                type: 'empieza',
-                question: 'Por muchas clases que hagas, no hay forma de mejorar:',
-                answer: 'Padel'
-            }]
-        },
-        {
-            letter: 'Q',
-            questions: [{
-                type: 'empieza',
-                question: 'Existen formas y formas de ser rechazado por una mujer, ¿Con qué ya histórica frase se terminaron tus intenciones de ligar aquella fatídica noche de 2016?:',
-                answer: '¿Quién es usted?'
-            }]
-        },
-        {
-            letter: 'R', questions: [
-                {
-                    type: 'empieza',
-                    question: 'Es futbolista y posiblemente uno de los jugadores más odiados por el colchonero medio:',
-                    answer: 'Ramos / Ronaldo (si dice uno, es el otro) 🥃'
-                },
-                {
-                    type: 'empieza',
-                    question: 'Termino utilizado comúnmente para describir regiones costeras mediterráneas caracterizadas por ser soleadas, pintorescas y turísticas:',
-                    answer: 'Riviera'
-                }
-            ]
-        },
-        {
-            letter: 'S',
-            questions: [{
-                type: 'empieza',
-                question: 'Compartes cosas con el pichichi de la segunda división. Su nombre empieza por ‘s’:',
-                answer: 'Sergio Arribas.'
-            }]
-        },
-        {
-            letter: 'T',
-            questions: [{
-                type: 'empieza',
-                question: 'Tu habilidad olimpica mas destacable, el salto al:',
-                answer: 'Tranvia'
-            }]
-        },
-        {
-            letter: 'U',
-            questions: [{
-                type: 'empieza',
-                question: 'Con la U. El mejor disfraz grupal de este año en el carnaval.',
-                answer: 'Umpa lumpa'
-            }]
-        },
-        {
-            letter: 'V', questions: [
-                {
-                    type: 'empieza',
-                    question: '¿Quién dijo la frase célebre: “Eu farei 10x se for preciso. Eles não estão preparados”?:',
-                    answer: 'Vinicius Jr'
-                },
-                {
-                    type: 'empieza',
-                    question: 'Banda sonora de la ruina emocional y la dopamina en combustión, cuando estás “cabezabajo” pensando en la vida moderna y la desilusión, pero aun así te lo pones en repetición:',
-                    answer: 'Veintiuno'
-                }
-            ]
-        },
-        {
-            letter: 'W',
-            questions: [{
-                type: 'empieza',
-                question: 'Tanto por ella como por el estadio han ‘pasado’ futbolistas famosos:',
-                answer: 'Wanda'
-            }]
-        },
-        {
-            letter: 'X',
-            questions: [{
-                type: 'contiene',
-                question: 'Vehículo nocturno que, tras tres trayectos seguidos y mucha conversación improvisada, convirtió un simple encuentro en el inicio de tu historia de amor más inesperada:',
-                answer: 'Taxi'
-            }]
-        },
-        {
-            letter: 'Y',
-            questions: [{
-                type: 'empieza',
-                question: 'En muchas ocasiones te ‘sales’ de este grupo. Luego vuelves con el rabo entre las piernas rogando por favor que se te vuelva a meter. Esto es un aviso. ¿Nombre del grupo?:',
-                answer: 'Ya'
-            }]
-        },
-        {
-            letter: 'Z',
-            questions: [{
-                type: 'contiene',
-                question: 'Tu debilidad gastronómica sin explicación y que siempre acaba ganando cualquier decisión, aunque haya cinco opciones mejores en la selección:',
-                answer: 'Arroz'
-            }]
-        }
-    ];
+    let gameData = Array.isArray(PROFILE.questions) ? PROFILE.questions : [];
 
     function RoscoGame() {
         const [questions] = useState(gameData);
@@ -384,30 +280,45 @@
         const [timeLeft, setTimeLeft] = useState(INITIAL_TIME);
         const [isMuted, setIsMuted] = useState(false);
         const [showJumpScare, setShowJumpScare] = useState(false);
+        const hasFriendImages = FRIEND_IMAGES.length > 0;
+
+        const getRandomPhotoIndex = (excludeIndex = -1) => {
+            if (FRIEND_IMAGES.length === 0) return -1;
+            if (FRIEND_IMAGES.length === 1) return 0;
+
+            let nextIndex = excludeIndex;
+            while (nextIndex === excludeIndex) {
+                nextIndex = Math.floor(Math.random() * FRIEND_IMAGES.length);
+            }
+            return nextIndex;
+        };
+
+        const getFriendImage = (index) => {
+            if (!hasFriendImages) return null;
+            return FRIEND_IMAGES[index] || FRIEND_IMAGES[0] || null;
+        };
+
+        const showNextRandomPhoto = () => {
+            if (!hasFriendImages) return;
+            setCurrentPhotoIndex(prev => getRandomPhotoIndex(prev));
+        };
 
         const startGame = () => {
-            if (!isMuted) {
-                const intro = new Audio(INTRO_AUDIO);
-                intro.volume = 0.6;
-                intro.addEventListener('timeupdate', function () {
-                    if (this.currentTime >= 17) {
-                        this.pause();
-                    }
-                });
-                intro.play().catch(e => console.log('Intro audio error:', e));
-            }
+            playSound('intro', isMuted);
             setProgress(questions.map(q => ({
                 status: 'unanswered',
                 answers: [],
                 currentQ: 0
             })));
             setCurrentIndex(0);
+            setCurrentPhotoIndex(getRandomPhotoIndex());
             setTimeLeft(INITIAL_TIME);
             setGameState('playing');
         };
 
         const resetGame = () => {
             setGameState('setup');
+            setCurrentPhotoIndex(0);
             setTimeLeft(INITIAL_TIME);
         };
 
@@ -437,22 +348,14 @@
         const handleAnswer = (isCorrect) => {
             if (gameState !== 'playing') return;
 
-            setCurrentPhotoIndex(prev => (prev + 1) % FRIEND_IMAGES.length);
+            showNextRandomPhoto();
 
             if (!isCorrect) {
                 setShowJumpScare(true);
                 setTimeout(() => setShowJumpScare(false), 1500);
             }
 
-            try {
-                if (!isMuted) {
-                    const audioUrl = isCorrect ? 'assets/audio/gol_atletico.m4a' : 'assets/audio/incorrect.mp3';
-                    const audio = new Audio(audioUrl);
-                    audio.volume = 0.7;
-                    audio.play().catch(e => console.log('Audio bloqueado por navegador', e));
-                }
-            } catch (e) {
-            }
+            playSound(isCorrect ? 'correct' : 'incorrect', isMuted);
 
             const newProgress = [...progress];
             const currentLetterProg = {...newProgress[currentIndex]};
@@ -478,16 +381,9 @@
 
         const handlePass = () => {
             if (gameState !== 'playing') return;
-            setCurrentPhotoIndex(prev => (prev + 1) % FRIEND_IMAGES.length);
+            showNextRandomPhoto();
 
-            try {
-                if (!isMuted) {
-                    const audio = new Audio(PASAPALABRA_AUDIO);
-                    audio.volume = 0.7;
-                    audio.play().catch(e => console.log('Audio bloqueado por navegador', e));
-                }
-            } catch (e) {
-            }
+            playSound('pass', isMuted);
 
             const newProgress = [...progress];
             newProgress[currentIndex].status = 'passed';
@@ -662,10 +558,11 @@
                 <div className="relative z-10 w-full flex flex-col items-center">
                     <header className="mb-8 text-center">
                         <h1 className="text-3xl sm:text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 drop-shadow-sm">
-                            Ruleta de la Fortuna Arribística
+                            {PROFILE.title}
                         </h1>
-                        <p className="text-slate-500 mt-2">El juego del Rosco de Champions Leagues que lleva el
-                            Atleti</p>
+                        {PROFILE.subtitle && (
+                            <p className="text-slate-500 mt-2">{PROFILE.subtitle}</p>
+                        )}
                     </header>
 
                     <div
@@ -763,7 +660,7 @@
                                                 <div
                                                     className="bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-inner mt-4 min-h-[120px] flex flex-col justify-center gap-4">
                                                     <p className="text-lg sm:text-xl font-medium leading-relaxed">
-                                                        "{questions[currentIndex].questions[progress[currentIndex].currentQ].question}"
+                                                        {questions[currentIndex].questions[progress[currentIndex].currentQ].question.replace(/\s*:\s*$/, '')}
                                                     </p>
                                                     <div
                                                         className="p-3 bg-indigo-50 rounded-xl border border-indigo-100">
@@ -778,12 +675,19 @@
 
                                             <div className="w-full sm:w-32 h-40 sm:h-auto flex-shrink-0">
                                                 <div
-                                                    className="h-full bg-white p-2 rounded-xl shadow-md border border-slate-200 transform rotate-2 hover:rotate-0 transition-transform duration-300">
-                                                    <img
-                                                        src={FRIEND_IMAGES[currentPhotoIndex]}
-                                                        className="w-full h-full object-cover rounded shadow-inner"
-                                                        alt="El novio"
-                                                    />
+                                                    className="h-full bg-white p-2 rounded-xl shadow-md border border-slate-200 transform rotate-2 hover:rotate-0 transition-transform duration-300 overflow-hidden">
+                                                    {getFriendImage(currentPhotoIndex) ? (
+                                                        <img
+                                                            src={getFriendImage(currentPhotoIndex)}
+                                                            className="w-full h-full object-cover rounded shadow-inner"
+                                                            alt="El novio"
+                                                        />
+                                                    ) : (
+                                                        <div
+                                                            className="w-full h-full rounded bg-slate-100 text-slate-400 flex items-center justify-center text-sm font-semibold text-center px-4">
+                                                            Sin fotos
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -825,9 +729,11 @@
                                             className="p-8 bg-slate-50 rounded-3xl border border-slate-200 shadow-lg relative overflow-hidden">
                                             <div
                                                 className="absolute top-0 right-0 p-4 opacity-10 transform rotate-12 scale-150">
-                                                <img
-                                                    src={FRIEND_IMAGES[Math.floor(Math.random() * FRIEND_IMAGES.length)]}
-                                                    className="w-32 h-32 object-cover rounded-full" alt=""/>
+                                                {getFriendImage(currentPhotoIndex) && (
+                                                    <img
+                                                        src={getFriendImage(currentPhotoIndex)}
+                                                        className="w-32 h-32 object-cover rounded-full" alt=""/>
+                                                )}
                                             </div>
 
                                             <h2 className="text-4xl font-black text-slate-800 mb-2 relative z-10">¡Juego
@@ -855,11 +761,18 @@
                                             <div className="mb-8 flex justify-center">
                                                 <div
                                                     className="p-3 bg-white rounded-2xl shadow-xl border-4 border-white transform -rotate-2 hover:rotate-0 transition-transform duration-500 max-w-[200px]">
-                                                    <img
-                                                        src={FRIEND_IMAGES[currentPhotoIndex]}
-                                                        className="w-full h-auto rounded-lg"
-                                                        alt="Celebración"
-                                                    />
+                                                    {getFriendImage(currentPhotoIndex) ? (
+                                                        <img
+                                                            src={getFriendImage(currentPhotoIndex)}
+                                                            className="w-full h-auto rounded-lg"
+                                                            alt="Celebración"
+                                                        />
+                                                    ) : (
+                                                        <div
+                                                            className="w-[176px] h-[176px] rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center text-sm font-semibold text-center px-4">
+                                                            Sin fotos
+                                                        </div>
+                                                    )}
                                                     <div
                                                         className="mt-3 font-handwriting text-slate-400 text-xs italic">#CaminoAlAltar
                                                     </div>
@@ -902,8 +815,17 @@
         );
     }
 
-    const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<RoscoGame/>);
+    (async () => {
+        const [friends, questions] = await Promise.all([
+            FRIEND_IMAGES.length === 0 ? loadRandomPhotos(PROFILE.name) : Promise.resolve(FRIEND_IMAGES),
+            gameData.length === 0      ? loadQuestions(PROFILE.name)    : Promise.resolve(gameData)
+        ]);
+        FRIEND_IMAGES = friends;
+        gameData = questions;
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<RoscoGame/>);
+    })();
 </script>
 </body>
 </html>
