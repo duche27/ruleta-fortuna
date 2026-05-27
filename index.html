@@ -18,6 +18,11 @@
     <!-- Confetti para la victoria -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
+    <!-- Firebase (Realtime Database, plan Spark gratuito) -->
+    <script src="firebase-config.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+
     <style>
         body {
             margin: 0;
@@ -62,7 +67,33 @@
 <div id="root"></div>
 
 <script type="text/babel">
-    const {useState, useEffect, useMemo} = React;
+    const {useState, useEffect, useMemo, useRef, useCallback} = React;
+
+    const createEmptyProgress = (questions) => questions.map(() => ({
+        status: 'unanswered',
+        answers: [],
+        currentQ: 0
+    }));
+
+    const hasMeaningfulProgress = (progress) =>
+        progress.some(p => p.answers.length > 0 || p.status !== 'unanswered');
+
+    const FIREBASE_STATE_PATH = 'ruleta/state';
+
+    const isFirebaseConfigured = () => {
+        const c = window.FIREBASE_CONFIG;
+        return c?.apiKey && c.apiKey !== 'YOUR_API_KEY' && c.databaseURL;
+    };
+
+    const applySavedState = (saved, setters) => {
+        if (!saved?.progress?.length) return false;
+        setters.setProgress(saved.progress);
+        setters.setCurrentIndex(saved.currentIndex ?? 0);
+        setters.setTimeLeft(saved.timeLeft ?? INITIAL_TIME);
+        setters.setGameState(saved.gameState ?? 'setup');
+        setters.setHasSavedGame(hasMeaningfulProgress(saved.progress) || saved.gameState !== 'setup');
+        return true;
+    };
 
     const BACKGROUND_IMAGE = "assets/images/background.png";
     const FRIEND_IMAGES = [
@@ -384,31 +415,134 @@
         const [timeLeft, setTimeLeft] = useState(INITIAL_TIME);
         const [isMuted, setIsMuted] = useState(false);
         const [showJumpScare, setShowJumpScare] = useState(false);
+        const [isLoading, setIsLoading] = useState(true);
+        const [hasSavedGame, setHasSavedGame] = useState(false);
+        const [saveError, setSaveError] = useState(false);
 
-        const startGame = () => {
-            if (!isMuted) {
-                const intro = new Audio(INTRO_AUDIO);
-                intro.volume = 0.6;
-                intro.addEventListener('timeupdate', function () {
-                    if (this.currentTime >= 17) {
-                        this.pause();
-                    }
-                });
-                intro.play().catch(e => console.log('Intro audio error:', e));
+        const stateRef = useRef({gameState, progress, currentIndex, timeLeft});
+        const dbRef = useRef(null);
+        const skipRemoteUpdate = useRef(false);
+        stateRef.current = {gameState, progress, currentIndex, timeLeft};
+
+        const persistState = useCallback(async (state) => {
+            if (!state.progress?.length) return;
+            if (!dbRef.current) {
+                setSaveError(true);
+                return;
             }
-            setProgress(questions.map(q => ({
-                status: 'unanswered',
-                answers: [],
-                currentQ: 0
-            })));
+            try {
+                skipRemoteUpdate.current = true;
+                await dbRef.current.set(state);
+                setSaveError(false);
+            } catch (e) {
+                skipRemoteUpdate.current = false;
+                console.warn('No se pudo guardar el progreso', e);
+                setSaveError(true);
+            }
+        }, []);
+
+        useEffect(() => {
+            if (!isFirebaseConfigured()) {
+                setSaveError(true);
+                setIsLoading(false);
+                return;
+            }
+
+            if (!firebase.apps.length) {
+                firebase.initializeApp(window.FIREBASE_CONFIG);
+            }
+            dbRef.current = firebase.database().ref(FIREBASE_STATE_PATH);
+
+            const onRemoteState = (snapshot) => {
+                if (skipRemoteUpdate.current) {
+                    skipRemoteUpdate.current = false;
+                    setIsLoading(false);
+                    return;
+                }
+                const saved = snapshot.val();
+                if (saved) {
+                    applySavedState(saved, {
+                        setProgress, setCurrentIndex, setTimeLeft, setGameState, setHasSavedGame
+                    });
+                } else {
+                    setGameState('setup');
+                    setProgress([]);
+                    setCurrentIndex(0);
+                    setTimeLeft(INITIAL_TIME);
+                    setHasSavedGame(false);
+                }
+                setSaveError(false);
+                setIsLoading(false);
+            };
+
+            const onError = (err) => {
+                console.warn('Firebase:', err);
+                setSaveError(true);
+                setIsLoading(false);
+            };
+
+            dbRef.current.on('value', onRemoteState, onError);
+            return () => dbRef.current?.off('value', onRemoteState);
+        }, []);
+
+        useEffect(() => {
+            if (isLoading || !progress.length) return;
+            const timer = setTimeout(() => persistState(stateRef.current), 300);
+            return () => clearTimeout(timer);
+        }, [gameState, progress, currentIndex, isLoading, persistState]);
+
+        useEffect(() => {
+            if (isLoading || gameState !== 'playing') return;
+            const id = setInterval(() => persistState(stateRef.current), 20000);
+            return () => clearInterval(id);
+        }, [gameState, isLoading, persistState]);
+
+        const playIntro = () => {
+            if (isMuted) return;
+            const intro = new Audio(INTRO_AUDIO);
+            intro.volume = 0.6;
+            intro.addEventListener('timeupdate', function () {
+                if (this.currentTime >= 17) {
+                    this.pause();
+                }
+            });
+            intro.play().catch(e => console.log('Intro audio error:', e));
+        };
+
+        const startGame = (fresh = true) => {
+            if (fresh) playIntro();
+            const newProgress = createEmptyProgress(questions);
+            setProgress(newProgress);
             setCurrentIndex(0);
             setTimeLeft(INITIAL_TIME);
             setGameState('playing');
+            setHasSavedGame(true);
+            if (fresh) {
+                persistState({gameState: 'playing', progress: newProgress, currentIndex: 0, timeLeft: INITIAL_TIME});
+            }
         };
 
-        const resetGame = () => {
+        const continueGame = () => {
+            if (gameState === 'finished') return;
+            setGameState('playing');
+            persistState({...stateRef.current, gameState: 'playing'});
+        };
+
+        const resetGame = async () => {
+            try {
+                if (dbRef.current) {
+                    skipRemoteUpdate.current = true;
+                    await dbRef.current.remove();
+                }
+            } catch (e) {
+                console.warn('No se pudo borrar el progreso guardado', e);
+            }
             setGameState('setup');
+            setProgress([]);
+            setCurrentIndex(0);
             setTimeLeft(INITIAL_TIME);
+            setHasSavedGame(false);
+            setSaveError(false);
         };
 
         useEffect(() => {
@@ -646,6 +780,14 @@
             );
         };
 
+        if (isLoading) {
+            return (
+                <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-600 font-sans">
+                    <p className="text-lg font-medium">Cargando partida...</p>
+                </div>
+            );
+        }
+
         return (
             <div className="min-h-screen p-4 sm:p-8 font-sans flex flex-col items-center relative overflow-hidden">
                 <div
@@ -694,7 +836,13 @@
                                 )}
                             </div>
 
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 items-center">
+                                {saveError && (
+                                    <span className="text-xs text-amber-600 font-medium hidden sm:inline"
+                                          title="Configura firebase-config.js con tu proyecto Firebase">
+                                        Sin guardar
+                                    </span>
+                                )}
                                 <button onClick={() => setIsMuted(!isMuted)}
                                         className="text-slate-500 hover:text-slate-700 transition-colors p-2 rounded-full hover:bg-slate-200"
                                         title={isMuted ? "Activar Sonido" : "Silenciar"}>
@@ -726,13 +874,35 @@
                                                 correcta, incorrecta o di "Pasapalabra" para dejarla para la siguiente
                                                 ronda.
                                             </p>
-                                            <button
-                                                onClick={startGame}
-                                                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 text-white font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5"
-                                            >
-                                                <Play size={20}/>
-                                                Comenzar Juego
-                                            </button>
+                                            {hasSavedGame ? (
+                                                <div className="space-y-3">
+                                                    <p className="text-sm text-blue-700 font-medium">
+                                                        Hay una partida en curso compartida con todos los jugadores.
+                                                    </p>
+                                                    <button
+                                                        onClick={continueGame}
+                                                        className="w-full inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 text-white font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5"
+                                                    >
+                                                        <Play size={20}/>
+                                                        Continuar partida
+                                                    </button>
+                                                    <button
+                                                        onClick={() => startGame(true)}
+                                                        className="w-full inline-flex items-center justify-center gap-2 px-8 py-3 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-xl border-2 border-slate-300 transition-all"
+                                                    >
+                                                        <RotateCcw size={20}/>
+                                                        Empezar de cero
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => startGame(true)}
+                                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 text-white font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5"
+                                                >
+                                                    <Play size={20}/>
+                                                    Comenzar Juego
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -878,7 +1048,7 @@
                     </div>
                     <footer
                         className="mt-8 text-center text-sm text-slate-600 bg-white/50 backdrop-blur-sm px-6 py-2 rounded-full relative z-10">
-                        Nota: En esta versión tú actúas como el presentador.
+                        Nota: En esta versión tú actúas como el presentador. El progreso se guarda en Firebase y lo ven todos los dispositivos en tiempo real.
                     </footer>
                 </div>
 

@@ -1,0 +1,10 @@
+{
+  "rules": {
+    "ruleta": {
+      "state": {
+        ".read": true,
+        ".write": true
+      }
+    }
+  }
+}
