@@ -4,7 +4,7 @@ import test from './test.json';
 
 const PROFILES = {albino, arribas, test};
 
-export const DEFAULT_PROFILE = 'albino';
+export const DEFAULT_PROFILE = PROFILES.arribas;
 
 export function listProfiles() {
     return Object.keys(PROFILES).filter(name => name !== 'test');
