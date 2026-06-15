@@ -1,5 +1,5 @@
 import {describe, it, expect} from 'vitest';
-import GameCore from '../../lib/game-core.js';
+import GameCore from '../../src/domain/game-core.js';
 
 const {
     isSupportedImageFile,

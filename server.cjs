@@ -72,7 +72,7 @@ http.createServer((req, res) => {
     fs.createReadStream(filePath).pipe(res);
 
 }).listen(PORT, '127.0.0.1', () => {
-    try { require('./scripts/generate-manifests'); } catch (e) { /* opcional */ }
+    try { require('./scripts/generate-manifests.cjs'); } catch (e) { /* opcional */ }
     console.log(`\nServidor arriba → http://localhost:${PORT}\n`);
     console.log('Suelta recursos en assets/ y recarga el navegador.');
     console.log('Ctrl+C para parar.\n');

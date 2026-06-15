@@ -1,7 +1,7 @@
 import {test, expect} from '@playwright/test';
 
 async function startTestGame(page) {
-    await page.goto('/index.html?profile=test');
+    await page.goto('/?profile=test');
     await expect(page.getByTestId('game-title')).toHaveText('Ruleta Test');
     await page.getByTestId('start-button').click();
     await expect(page.getByTestId('playing-panel')).toBeVisible();
@@ -9,10 +9,10 @@ async function startTestGame(page) {
 
 test.describe('Ruleta game', () => {
     test('loads profile from url and shows setup screen', async ({page}) => {
-        await page.goto('/index.html?profile=test');
+        await page.goto('/?profile=test');
         await expect(page.getByTestId('game-title')).toHaveText('Ruleta Test');
         await expect(page.getByTestId('start-button')).toBeVisible();
-        await expect(page.locator('#loading-screen')).toHaveClass(/hidden/);
+        await expect(page.locator('#loading-screen')).toHaveCount(0);
     });
 
     test('starts game and tracks correct answers', async ({page}) => {

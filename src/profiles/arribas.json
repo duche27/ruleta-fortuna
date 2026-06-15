@@ -1,0 +1,12 @@
+{
+  "name": "arribas",
+  "title": "Ruleta de la Fortuna Arribística",
+  "subtitle": "El juego del Rosco de Champions Leagues que lleva el Atleti",
+  "initialTime": 250,
+  "audio": {
+    "intro":     { "volume": 0.6, "cutoffAt": 17 },
+    "correct":   { "volume": 0.7 },
+    "incorrect": { "volume": 0.7 },
+    "pass":      { "volume": 0.7 }
+  }
+}

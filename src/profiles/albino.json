@@ -1,0 +1,12 @@
+{
+  "name": "albino",
+  "title": "Ruleta de la Fortuna Albina",
+  "subtitle": "El juego perfecto por si te has olvidado de beber los últimos 5 minutos",
+  "initialTime": 250,
+  "audio": {
+    "intro":     { "volume": 0.6, "cutoffAt": 17 },
+    "correct":   { "volume": 0.7 },
+    "incorrect": { "volume": 0.7 },
+    "pass":      { "volume": 0.7 }
+  }
+}
