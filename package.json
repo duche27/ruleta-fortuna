@@ -1,0 +1,15 @@
+{
+  "name": "ruleta-fortuna",
+  "private": true,
+  "scripts": {
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "manifests": "node scripts/generate-manifests.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "vitest": "^3.2.4"
+  }
+}

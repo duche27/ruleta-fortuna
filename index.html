@@ -2,9 +2,14 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Ruleta de la Fortuna Arribística</title>
     <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="manifest" href="app.webmanifest">
+    <link rel="apple-touch-icon" href="favicon.png">
 
     <!-- Tailwind CSS para los estilos -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -19,13 +24,61 @@
     <!-- Confetti para la victoria -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-    <!-- Perfil activo: cambia esta línea para usar otro amigo (ver profiles/example.js) -->
-    <script src="profiles/albino.js"></script>
+    <script src="lib/game-core.js"></script>
 
     <style>
         body {
             margin: 0;
             padding: 0;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        button {
+            touch-action: manipulation;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-spinner {
+            width: 3rem;
+            height: 3rem;
+            border: 4px solid #e2e8f0;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        #loading-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            background: #f8fafc;
+            color: #334155;
+            font-family: system-ui, sans-serif;
+        }
+
+        #loading-screen.hidden {
+            display: none;
+        }
+
+        .rosco-circle {
+            width: 15rem;
+            height: 15rem;
+        }
+
+        @media (min-width: 640px) {
+            .rosco-circle {
+                width: 20rem;
+                height: 20rem;
+            }
         }
 
         /* Animaciones básicas */
@@ -63,44 +116,88 @@
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
+<div id="loading-screen" aria-live="polite">
+    <div class="loading-spinner" aria-hidden="true"></div>
+    <p id="loading-message">Cargando ruleta...</p>
+</div>
 <div id="root"></div>
 
 <script type="text/babel">
-    const {useState, useEffect, useMemo} = React;
+    const {useState, useEffect, useMemo, useRef, useCallback} = React;
+    const {
+        isSupportedImageFile,
+        isSupportedAudioFile,
+        buildAssetUrl,
+        manifestFilesToUrls,
+        computeStats,
+        getNextIndex,
+        getRandomPhotoIndex,
+        detectSwipeDirection,
+        getLetterFillColor,
+        getAnswerSummary,
+        createInitialProgress
+    } = window.GameCore;
 
-    if (!window.RouletteProfile) {
-        document.getElementById('root').innerHTML =
-            '<div style="padding:2rem;font-family:sans-serif;color:#b91c1c">' +
-            '<h1>No hay perfil cargado</h1>' +
-            '<p>Edita el &lt;script src="profiles/..."&gt; en <code>index.html</code> para apuntar a un perfil válido.</p>' +
-            '</div>';
-        throw new Error('window.RouletteProfile is undefined');
+    const DEFAULT_PROFILE = 'albino';
+
+    async function loadProfileScript(profileName) {
+        if (window.RouletteProfile && window.RouletteProfile.name === profileName) return;
+        window.RouletteProfile = undefined;
+        await new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = `profiles/${profileName}.js`;
+            script.onload = resolve;
+            script.onerror = () => reject(new Error(`Perfil no encontrado: ${profileName}`));
+            document.head.appendChild(script);
+        });
     }
 
-    const PROFILE = window.RouletteProfile;
-    let BACKGROUND_IMAGE = PROFILE.images?.background || null;
-    let FRIEND_IMAGES = Array.isArray(PROFILE.images?.friends) ? PROFILE.images.friends : [];
-    let WRONG_ANSWER_IMAGE = PROFILE.images?.wrongAnswer || null;
-    const INITIAL_TIME = PROFILE.initialTime;
-
-    function isSupportedImageFile(fileName) {
-        return /\.(?:avif|gif|jpe?g|png|webp)$/i.test(fileName);
+    function hideLoadingScreen() {
+        const el = document.getElementById('loading-screen');
+        if (el) el.classList.add('hidden');
     }
 
-    function isSupportedAudioFile(fileName) {
-        return /\.(?:m4a|mp3|mp4|mpeg|ogg|wav)$/i.test(fileName);
+    function setLoadingMessage(message) {
+        const el = document.getElementById('loading-message');
+        if (el) el.textContent = message;
     }
 
-    function buildAssetUrl(basePath, fileName) {
-        return `${basePath}${encodeURIComponent(fileName)}`;
+    function triggerHaptic(pattern) {
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate(pattern);
+        }
+    }
+
+    async function requestWakeLock() {
+        if (!('wakeLock' in navigator)) return null;
+        try {
+            return await navigator.wakeLock.request('screen');
+        } catch (e) {
+            return null;
+        }
+    }
+
+    async function lockPortraitOrientation() {
+        try {
+            if (screen.orientation && screen.orientation.lock) {
+                await screen.orientation.lock('portrait');
+            }
+        } catch (e) { /* no soportado en todos los navegadores */ }
+    }
+
+    async function unlockOrientation() {
+        try {
+            if (screen.orientation && screen.orientation.unlock) {
+                screen.orientation.unlock();
+            }
+        } catch (e) { /* noop */ }
     }
 
     async function loadFromManifest(basePath, supportedFn) {
         const r = await fetch(`${basePath}manifest.json`);
         if (!r.ok) return [];
         const data = await r.json();
-        const files = Array.isArray(data) ? data : (data.files || []);
-        return files.filter(supportedFn).map(f => buildAssetUrl(basePath, f));
+        return manifestFilesToUrls(data, basePath, supportedFn);
     }
 
     async function loadFromDirectoryListing(basePath, regex) {
@@ -305,7 +402,12 @@
         <polyline points="12 6 12 12 16 14"/>
     </svg>;
 
-    let gameData = Array.isArray(PROFILE.questions) ? PROFILE.questions : [];
+    let PROFILE;
+    let BACKGROUND_IMAGE = null;
+    let FRIEND_IMAGES = [];
+    let WRONG_ANSWER_IMAGE = null;
+    let INITIAL_TIME = 180;
+    let gameData = [];
 
     function RoscoGame() {
         const [questions] = useState(gameData);
@@ -316,46 +418,43 @@
         const [timeLeft, setTimeLeft] = useState(INITIAL_TIME);
         const [isMuted, setIsMuted] = useState(false);
         const [showJumpScare, setShowJumpScare] = useState(false);
+        const wakeLockRef = useRef(null);
+        const touchStartRef = useRef(null);
         const hasFriendImages = FRIEND_IMAGES.length > 0;
 
-        const getRandomPhotoIndex = (excludeIndex = -1) => {
-            if (FRIEND_IMAGES.length === 0) return -1;
-            if (FRIEND_IMAGES.length === 1) return 0;
-
-            let nextIndex = excludeIndex;
-            while (nextIndex === excludeIndex) {
-                nextIndex = Math.floor(Math.random() * FRIEND_IMAGES.length);
-            }
-            return nextIndex;
-        };
-
-        const getFriendImage = (index) => {
-            if (!hasFriendImages) return null;
-            return FRIEND_IMAGES[index] || FRIEND_IMAGES[0] || null;
-        };
-
-        const showNextRandomPhoto = () => {
+        const showNextRandomPhoto = useCallback(() => {
             if (!hasFriendImages) return;
-            setCurrentPhotoIndex(prev => getRandomPhotoIndex(prev));
-        };
+            setCurrentPhotoIndex(prev => getRandomPhotoIndex(FRIEND_IMAGES.length, prev));
+        }, [hasFriendImages]);
+
+        const acquireMobileSession = useCallback(async () => {
+            wakeLockRef.current = await requestWakeLock();
+            await lockPortraitOrientation();
+        }, []);
+
+        const releaseMobileSession = useCallback(async () => {
+            if (wakeLockRef.current) {
+                try { await wakeLockRef.current.release(); } catch (e) { /* noop */ }
+                wakeLockRef.current = null;
+            }
+            await unlockOrientation();
+        }, []);
 
         const startGame = () => {
             playSound('intro', isMuted);
-            setProgress(questions.map(q => ({
-                status: 'unanswered',
-                answers: [],
-                currentQ: 0
-            })));
+            setProgress(createInitialProgress(questions));
             setCurrentIndex(0);
-            setCurrentPhotoIndex(getRandomPhotoIndex());
+            setCurrentPhotoIndex(getRandomPhotoIndex(FRIEND_IMAGES.length));
             setTimeLeft(INITIAL_TIME);
             setGameState('playing');
+            acquireMobileSession();
         };
 
         const resetGame = () => {
             setGameState('setup');
             setCurrentPhotoIndex(0);
             setTimeLeft(INITIAL_TIME);
+            releaseMobileSession();
         };
 
         useEffect(() => {
@@ -370,21 +469,16 @@
             return () => clearInterval(timer);
         }, [gameState, timeLeft]);
 
-        const getNextIndex = (startIndex, currentProgress) => {
-            let nextIdx = (startIndex + 1) % questions.length;
-            let loopCount = 0;
-            while (currentProgress[nextIdx].status === 'completed') {
-                nextIdx = (nextIdx + 1) % questions.length;
-                loopCount++;
-                if (loopCount > questions.length) return -1;
-            }
-            return nextIdx;
+        const getFriendImage = (index) => {
+            if (!hasFriendImages) return null;
+            return FRIEND_IMAGES[index] || FRIEND_IMAGES[0] || null;
         };
 
         const handleAnswer = (isCorrect) => {
             if (gameState !== 'playing') return;
 
             showNextRandomPhoto();
+            triggerHaptic(isCorrect ? 30 : [80, 40, 80]);
 
             if (!isCorrect) {
                 setShowJumpScare(true);
@@ -403,9 +497,10 @@
                 currentLetterProg.status = 'completed';
                 newProgress[currentIndex] = currentLetterProg;
 
-                const nextIdx = getNextIndex(currentIndex, newProgress);
+                const nextIdx = getNextIndex(currentIndex, newProgress, questions.length);
                 if (nextIdx === -1) {
                     setGameState('finished');
+                    releaseMobileSession();
                 } else {
                     setCurrentIndex(nextIdx);
                 }
@@ -418,15 +513,17 @@
         const handlePass = () => {
             if (gameState !== 'playing') return;
             showNextRandomPhoto();
+            triggerHaptic(20);
 
             playSound('pass', isMuted);
 
             const newProgress = [...progress];
             newProgress[currentIndex].status = 'passed';
 
-            const nextIdx = getNextIndex(currentIndex, newProgress);
+            const nextIdx = getNextIndex(currentIndex, newProgress, questions.length);
             if (nextIdx === -1) {
                 setGameState('finished');
+                releaseMobileSession();
             } else {
                 setCurrentIndex(nextIdx);
                 setProgress(newProgress);
@@ -445,17 +542,23 @@
             }
         };
 
-        const stats = useMemo(() => {
-            let correct = 0;
-            let incorrect = 0;
-            progress.forEach(p => {
-                p.answers.forEach(ans => {
-                    if (ans) correct++; else incorrect++;
-                });
-            });
-            const totalQuestions = questions.reduce((sum, q) => sum + q.questions.length, 0);
-            return {correct, incorrect, remaining: totalQuestions - correct - incorrect};
-        }, [progress, questions]);
+        const stats = useMemo(() => computeStats(progress, questions), [progress, questions]);
+
+        useEffect(() => {
+            return () => { releaseMobileSession(); };
+        }, [releaseMobileSession]);
+
+        useEffect(() => {
+            if (gameState !== 'playing') return;
+
+            const onVisibilityChange = async () => {
+                if (document.visibilityState === 'visible' && !wakeLockRef.current) {
+                    wakeLockRef.current = await requestWakeLock();
+                }
+            };
+            document.addEventListener('visibilitychange', onVisibilityChange);
+            return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+        }, [gameState]);
 
         useEffect(() => {
             if (gameState === 'finished' && stats.correct > 0) {
@@ -504,31 +607,51 @@
             return () => window.removeEventListener('keydown', handleKeyDown);
         }, [gameState, currentIndex, progress, isMuted]);
 
+        useEffect(() => {
+            if (gameState !== 'playing') return;
+
+            const onTouchStart = (e) => {
+                const touch = e.changedTouches[0];
+                touchStartRef.current = {x: touch.clientX, y: touch.clientY};
+            };
+
+            const onTouchEnd = (e) => {
+                if (!touchStartRef.current) return;
+                const touch = e.changedTouches[0];
+                const deltaX = touch.clientX - touchStartRef.current.x;
+                const deltaY = touch.clientY - touchStartRef.current.y;
+                touchStartRef.current = null;
+
+                const direction = detectSwipeDirection(deltaX, deltaY);
+                if (direction === 'right') handleAnswer(true);
+                else if (direction === 'left') handleAnswer(false);
+                else if (direction === 'up') handlePass();
+            };
+
+            window.addEventListener('touchstart', onTouchStart, {passive: true});
+            window.addEventListener('touchend', onTouchEnd, {passive: true});
+            return () => {
+                window.removeEventListener('touchstart', onTouchStart);
+                window.removeEventListener('touchend', onTouchEnd);
+            };
+        }, [gameState, currentIndex, progress, isMuted]);
+
         const renderCircle = () => {
             const radius = 140;
             const center = 160;
 
             return (
-                <div className="relative w-80 h-80 mx-auto my-8">
+                <div className="relative rosco-circle mx-auto my-4 sm:my-8" data-testid="rosco-circle">
                     <svg className="w-full h-full" viewBox="0 0 320 320">
                         {questions.map((q, index) => {
                             const angle = (index / questions.length) * 2 * Math.PI - Math.PI / 2;
                             const x = center + radius * Math.cos(angle);
                             const y = center + radius * Math.sin(angle);
 
-                            let fillColor = '#3b82f6';
-                            let strokeColor = 'none';
-                            let strokeWidth = '0';
                             const prog = progress[index] || {status: 'unanswered', answers: []};
-
-                            if (gameState === 'playing' && index === currentIndex) {
-                                fillColor = '#eab308';
-                                strokeColor = '#ca8a04';
-                                strokeWidth = '3';
-                            } else if (prog.status === 'completed') {
-                                const allCorrect = prog.answers.every(a => a === true);
-                                fillColor = allCorrect ? '#22c55e' : '#ef4444';
-                            }
+                            const {fill: fillColor, stroke: strokeColor, strokeWidth} =
+                                getLetterFillColor({index, currentIndex, gameState, prog});
+                            const summary = getAnswerSummary(prog);
 
                             return (
                                 <g key={q.letter} transform={`translate(${x}, ${y})`}
@@ -540,6 +663,13 @@
                                           className="pointer-events-none font-sans">
                                         {q.letter}
                                     </text>
+                                    {summary && (
+                                        <text x="0" y="22" textAnchor="middle" fill="white" fontSize="8"
+                                              fontWeight="bold" className="pointer-events-none font-sans">
+                                            {summary.correct > 0 ? `✓${summary.correct}` : ''}
+                                            {summary.incorrect > 0 ? ` ✗${summary.incorrect}` : ''}
+                                        </text>
+                                    )}
                                     {q.questions.length > 1 && (
                                         <g transform="translate(10, -10)">
                                             <circle r="7" fill="#f97316" className="drop-shadow-sm"/>
@@ -592,8 +722,8 @@
                 />
 
                 <div className="relative z-10 w-full flex flex-col items-center">
-                    <header className="mb-8 text-center">
-                        <h1 className="text-3xl sm:text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 drop-shadow-sm">
+                    <header className="mb-4 sm:mb-8 text-center">
+                        <h1 className="text-2xl sm:text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 drop-shadow-sm" data-testid="game-title">
                             {PROFILE.title}
                         </h1>
                         {PROFILE.subtitle && (
@@ -609,7 +739,7 @@
                                 <div className="flex gap-4">
                                     <div className="flex items-center gap-2">
                                         <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                                        <span className="font-semibold">{stats.correct}</span></div>
+                                        <span className="font-semibold" data-testid="correct-count">{stats.correct}</span></div>
                                     <div className="flex items-center gap-2">
                                         <div className="w-3 h-3 rounded-full bg-red-500"></div>
                                         <span className="font-semibold">{stats.incorrect}</span></div>
@@ -629,6 +759,7 @@
 
                             <div className="flex gap-2">
                                 <button onClick={() => setIsMuted(!isMuted)}
+                                        data-testid="mute-button"
                                         className="text-slate-500 hover:text-slate-700 transition-colors p-2 rounded-full hover:bg-slate-200"
                                         title={isMuted ? "Activar Sonido" : "Silenciar"}>
                                     {isMuted ? <VolumeX size={20}/> : <Volume2 size={20}/>}
@@ -661,6 +792,7 @@
                                             </p>
                                             <button
                                                 onClick={startGame}
+                                                data-testid="start-button"
                                                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 text-white font-bold rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5"
                                             >
                                                 <Play size={20}/>
@@ -671,7 +803,7 @@
                                 )}
 
                                 {gameState === 'playing' && progress.length > 0 && (
-                                    <div className="flex flex-col h-full fade-in">
+                                    <div className="flex flex-col h-full fade-in" data-testid="playing-panel">
                                         <div className="mb-6 flex flex-col sm:flex-row gap-4">
                                             <div className="flex-1">
                                                 <div className="flex items-center justify-between mb-2">
@@ -729,8 +861,12 @@
                                         </div>
 
                                         <div className="mt-auto space-y-4">
+                                            <p className="text-xs text-center text-slate-400 sm:hidden">
+                                                Desliza → correcto · ← incorrecto · ↑ pasapalabra
+                                            </p>
                                             <div className="grid grid-cols-2 gap-4">
                                                 <button onClick={() => handleAnswer(true)}
+                                                        data-testid="correct-button"
                                                         className="group flex flex-col items-center justify-center p-4 bg-green-50 hover:bg-green-500 border-2 border-green-500 rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md">
                                                     <div
                                                         className="bg-green-500 group-hover:bg-white p-2 rounded-full mb-2 transition-colors">
@@ -741,6 +877,7 @@
                                                         className="font-bold text-green-700 group-hover:text-white transition-colors">Correcto</span>
                                                 </button>
                                                 <button onClick={() => handleAnswer(false)}
+                                                        data-testid="incorrect-button"
                                                         className="group flex flex-col items-center justify-center p-4 bg-red-50 hover:bg-red-500 border-2 border-red-500 rounded-2xl transition-all duration-200 shadow-sm hover:shadow-md">
                                                     <div
                                                         className="bg-red-500 group-hover:bg-white p-2 rounded-full mb-2 transition-colors">
@@ -752,6 +889,7 @@
                                                 </button>
                                             </div>
                                             <button onClick={handlePass}
+                                                    data-testid="pass-button"
                                                     className="w-full flex items-center justify-center gap-2 p-4 bg-slate-100 hover:bg-blue-500 text-slate-700 hover:text-white border border-slate-300 hover:border-blue-500 rounded-2xl transition-all duration-200 font-bold text-lg">
                                                 <SkipForward size={20}/> Pasapalabra
                                             </button>
@@ -760,7 +898,7 @@
                                 )}
 
                                 {gameState === 'finished' && (
-                                    <div className="text-center space-y-6 fade-in w-full max-w-xl mx-auto">
+                                    <div className="text-center space-y-6 fade-in w-full max-w-xl mx-auto" data-testid="finished-panel">
                                         <div
                                             className="p-8 bg-slate-50 rounded-3xl border border-slate-200 shadow-lg relative overflow-hidden">
                                             <div
@@ -833,7 +971,8 @@
 
                 {showJumpScare && (
                     <div
-                        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm fade-in">
+                        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm fade-in"
+                        data-testid="jump-scare">
                         <div className="relative animate-jump-scare">
                             <img
                                 src={WRONG_ANSWER_IMAGE}
@@ -852,22 +991,50 @@
     }
 
     (async () => {
-        const [friends, questions, background, wrongAnswer] = await Promise.all([
-            FRIEND_IMAGES.length === 0 ? loadRandomPhotos(PROFILE.name) : Promise.resolve(FRIEND_IMAGES),
-            gameData.length === 0      ? loadQuestions(PROFILE.name)    : Promise.resolve(gameData),
-            BACKGROUND_IMAGE ? Promise.resolve(BACKGROUND_IMAGE) : loadSingleImage(PROFILE.name, 'background'),
-            WRONG_ANSWER_IMAGE ? Promise.resolve(WRONG_ANSWER_IMAGE) : loadSingleImage(PROFILE.name, 'wrong_answer')
-        ]);
+        try {
+            const profileName = new URLSearchParams(window.location.search).get('profile') || DEFAULT_PROFILE;
+            setLoadingMessage(`Cargando ${profileName}...`);
+            await loadProfileScript(profileName);
 
-        FRIEND_IMAGES = friends;
-        gameData = questions;
-        BACKGROUND_IMAGE = background;
-        WRONG_ANSWER_IMAGE = wrongAnswer;
+            if (!window.RouletteProfile) {
+                throw new Error('window.RouletteProfile is undefined');
+            }
 
-        await resolveProfileAudio(PROFILE.name);
+            PROFILE = window.RouletteProfile;
+            BACKGROUND_IMAGE = PROFILE.images?.background || null;
+            FRIEND_IMAGES = Array.isArray(PROFILE.images?.friends) ? PROFILE.images.friends : [];
+            WRONG_ANSWER_IMAGE = PROFILE.images?.wrongAnswer || null;
+            INITIAL_TIME = PROFILE.initialTime;
+            gameData = Array.isArray(PROFILE.questions) ? PROFILE.questions : [];
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<RoscoGame/>);
+            setLoadingMessage('Cargando recursos...');
+            const [friends, questions, background, wrongAnswer] = await Promise.all([
+                FRIEND_IMAGES.length === 0 ? loadRandomPhotos(PROFILE.name) : Promise.resolve(FRIEND_IMAGES),
+                gameData.length === 0      ? loadQuestions(PROFILE.name)    : Promise.resolve(gameData),
+                BACKGROUND_IMAGE ? Promise.resolve(BACKGROUND_IMAGE) : loadSingleImage(PROFILE.name, 'background'),
+                WRONG_ANSWER_IMAGE ? Promise.resolve(WRONG_ANSWER_IMAGE) : loadSingleImage(PROFILE.name, 'wrong_answer')
+            ]);
+
+            FRIEND_IMAGES = friends;
+            gameData = questions;
+            BACKGROUND_IMAGE = background;
+            WRONG_ANSWER_IMAGE = wrongAnswer;
+
+            await resolveProfileAudio(PROFILE.name);
+
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<RoscoGame/>);
+            hideLoadingScreen();
+        } catch (error) {
+            console.error(error);
+            document.getElementById('root').innerHTML =
+                '<div style="padding:2rem;font-family:sans-serif;color:#b91c1c">' +
+                '<h1>No se pudo cargar el juego</h1>' +
+                `<p>${error.message}</p>` +
+                '<p>Usa <code>?profile=nombre</code> con un perfil válido en <code>profiles/</code>.</p>' +
+                '</div>';
+            hideLoadingScreen();
+        }
     })();
 </script>
 </body>
