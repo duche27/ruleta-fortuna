@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 import {viteStaticCopy} from 'vite-plugin-static-copy';
 import {resolve} from 'path';
 import sirv from 'sirv';
+import {dynamicAssetManifests} from './vite.manifest-plugin.js';
 
 const isCapacitor = process.env.CAPACITOR === 'true';
 const isGitHubPages = process.env.GITHUB_PAGES === 'true';
@@ -12,6 +13,7 @@ export default defineConfig({
     base,
     plugins: [
         react(),
+        dynamicAssetManifests(),
         viteStaticCopy({
             targets: [
                 {src: 'assets', dest: '.'},
