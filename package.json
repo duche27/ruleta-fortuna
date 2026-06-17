@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "node scripts/generate-manifests.cjs && vite build",
-    "preview": "vite preview",
+    "preview": "node scripts/generate-manifests.cjs && vite preview",
     "manifests": "node scripts/generate-manifests.cjs",
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "vitest run",
