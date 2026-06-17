@@ -1,0 +1,51 @@
+version: 2
+
+# Works with "Grouped security updates" enabled in repo Settings → Code security.
+# Security PRs → one grouped PR per ecosystem. Version PRs → separate weekly groups below.
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    groups:
+      # All npm security fixes in a single PR (matches repo grouped security setting)
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - '*'
+      # Weekly version bumps — dev deps grouped, prod deps separate
+      npm-dev:
+        applies-to: version-updates
+        dependency-type: development
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+      npm-prod:
+        applies-to: version-updates
+        dependency-type: production
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      actions-security:
+        applies-to: security-updates
+        patterns:
+          - '*'
+      actions-version:
+        applies-to: version-updates
+        patterns:
+          - '*'
