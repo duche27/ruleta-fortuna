@@ -11,6 +11,9 @@ const base = isCapacitor ? './' : (isGitHubPages ? '/ruleta-fortuna/' : '/');
 
 export default defineConfig({
     base,
+    define: {
+        __NATIVE_SHELL__: JSON.stringify(isCapacitor)
+    },
     plugins: [
         react(),
         dynamicAssetManifests(),

@@ -68,25 +68,32 @@ test.describe('Ruleta game', () => {
         await expect(page.getByTestId('jump-scare')).toBeVisible();
     });
 
-    test('swipe right marks answer as correct on mobile', async ({page}, testInfo) => {
+    test('swipe left marks answer as correct on mobile', async ({page}, testInfo) => {
         test.skip(testInfo.project.name !== 'mobile', 'Mobile-only swipe test');
         await startTestGame(page);
         await page.evaluate(() => {
             window.dispatchEvent(new TouchEvent('touchstart', {
                 bubbles: true,
+                touches: [new Touch({
+                    identifier: 1,
+                    target: document.body,
+                    clientX: 220,
+                    clientY: 400
+                })],
                 changedTouches: [new Touch({
                     identifier: 1,
                     target: document.body,
-                    clientX: 40,
+                    clientX: 220,
                     clientY: 400
                 })]
             }));
             window.dispatchEvent(new TouchEvent('touchend', {
                 bubbles: true,
+                touches: [],
                 changedTouches: [new Touch({
                     identifier: 1,
                     target: document.body,
-                    clientX: 220,
+                    clientX: 40,
                     clientY: 400
                 })]
             }));

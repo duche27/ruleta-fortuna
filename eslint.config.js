@@ -10,7 +10,7 @@ export default [
         files: ['src/**/*.{js,jsx}', 'tests/**/*.{js,jsx}'],
         languageOptions: {
             ecmaVersion: 2022,
-            globals: globals.browser,
+            globals: {...globals.browser, __NATIVE_SHELL__: 'readonly'},
             parserOptions: {ecmaFeatures: {jsx: true}}
         },
         plugins: {react, 'react-hooks': reactHooks, 'react-refresh': reactRefresh},

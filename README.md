@@ -44,11 +44,14 @@ Builds the app into `dist/` (used by GitHub Pages and Capacitor).
 - Generates asset manifests and bundles the app.
 - Run before `cap:sync` or to verify the production build locally.
 
-### `npm run preview` — test production build locally
+### `npm run preview` — serve existing production build
 
-Serves `dist/` at **http://localhost:4173**.
+Serves `dist/` at **http://localhost:4173**. Requires `npm run build` first.
 
-- Use to confirm the app works exactly as it will on GitHub Pages.
+### `npm run preview:prod` — build and preview in one step
+
+Runs a full production build, then serves it. Use this to verify the app as it will run on GitHub Pages.
+
 - Example: `http://localhost:4173/?profile=albino`
 
 ### `npm run manifests` — regenerate manifests only
@@ -108,10 +111,10 @@ Runs `cap:sync`, then opens Android Studio. Pick an emulator or device and press
 | Goal | Command |
 |------|---------|
 | Develop in browser | `npm run dev` → open `http://localhost:5173/?profile=arribas` |
-| Verify production web build | `npm run build && npm run preview` |
+| Verify production web build | `npm run preview:prod` |
 | Test on iPhone simulator | `npm run cap:ios` → Run in Xcode |
 | Test on Android emulator | `npm run cap:android` → Run in Android Studio |
-| Run CI checks locally | `npm run lint && npm test` |
+| Run CI checks locally | `npm run lint` then `npm test` |
 | Deploy to web | Push to `main` (GitHub Actions builds and deploys `dist/`) |
 
 ---

@@ -7,6 +7,7 @@ body {
     padding: 0;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
 }
 
 button {
@@ -45,10 +46,52 @@ button {
     height: 15rem;
 }
 
+.rosco-circle--compact {
+    width: min(17rem, 92vw);
+    height: min(17rem, 92vw);
+}
+
+.native-play-shell__rosco {
+    flex: 0 0 50%;
+    height: 50%;
+    min-height: 50%;
+    container-type: size;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 0.25rem;
+    box-sizing: border-box;
+}
+
+.native-play-shell .rosco-circle {
+    width: min(92vw, calc(50dvh - 8rem));
+    height: min(92vw, calc(50dvh - 8rem));
+    margin: 0;
+    flex-shrink: 0;
+}
+
+@supports (width: 1cqmin) {
+    .native-play-shell .rosco-circle {
+        width: min(100cqmin, 92vw);
+        height: min(100cqmin, 92vw);
+    }
+}
+
+.native-play-shell .rosco-center-bg {
+    width: 60%;
+    height: 60%;
+}
+
 @media (min-width: 640px) {
     .rosco-circle {
         width: 20rem;
         height: 20rem;
+    }
+
+    .rosco-circle--compact {
+        width: 17rem;
+        height: 17rem;
     }
 }
 

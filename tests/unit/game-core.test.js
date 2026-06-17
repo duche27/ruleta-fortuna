@@ -10,6 +10,7 @@ const {
     getNextIndex,
     getRandomPhotoIndex,
     detectSwipeDirection,
+    resolveSwipeAction,
     getLetterFillColor,
     getAnswerSummary,
     createInitialProgress,
@@ -115,6 +116,13 @@ describe('swipe detection', () => {
 
     it('ignores small movements', () => {
         expect(detectSwipeDirection(10, 5)).toBeNull();
+    });
+
+    it('maps swipe directions to game actions', () => {
+        expect(resolveSwipeAction('left')).toBe('correct');
+        expect(resolveSwipeAction('right')).toBe('incorrect');
+        expect(resolveSwipeAction('up')).toBe('pass');
+        expect(resolveSwipeAction(null)).toBeNull();
     });
 });
 
