@@ -1,6 +1,5 @@
 import {test, expect} from '@playwright/test';
 import {startTestGame} from './helpers.js';
-import {isMobileProject, touchSwipe, touchSwipeMoveOnly} from './swipe-helpers.js';
 
 test.describe('Ruleta game', () => {
     test('loads profile from url and shows setup screen', async ({page}) => {
@@ -53,45 +52,6 @@ test.describe('Ruleta game', () => {
         await page.getByTestId('mute-button').click();
         await page.getByTestId('correct-button').click();
         await expect(page.getByTestId('correct-count')).toHaveText('1');
-    });
-
-    test('keyboard shortcuts work on desktop', async ({page}, testInfo) => {
-        test.skip(isMobileProject(testInfo), 'Desktop-only test');
-        await startTestGame(page);
-        await page.keyboard.press('Enter');
-        await expect(page.getByTestId('correct-count')).toHaveText('1');
-        await page.keyboard.press('Backspace');
-        await expect(page.getByTestId('jump-scare')).toBeVisible();
-    });
-
-    test('swipe left marks answer as correct on mobile', async ({page}, testInfo) => {
-        test.skip(!isMobileProject(testInfo), 'Mobile-only swipe test');
-        await startTestGame(page);
-        await touchSwipe(page, {deltaX: -180, deltaY: 0});
-        await expect(page.getByTestId('correct-count')).toHaveText('1');
-    });
-
-    test('swipe right shows jump scare on mobile', async ({page}, testInfo) => {
-        test.skip(!isMobileProject(testInfo), 'Mobile-only swipe test');
-        await startTestGame(page);
-        await touchSwipe(page, {deltaX: 180, deltaY: 0});
-        await expect(page.getByTestId('jump-scare')).toBeVisible();
-    });
-
-    test('swipe up passes to next letter on mobile', async ({page}, testInfo) => {
-        test.skip(!isMobileProject(testInfo), 'Mobile-only swipe test');
-        await startTestGame(page);
-        await expect(page.getByText('Capital de España')).toBeVisible();
-        await touchSwipe(page, {deltaX: 0, deltaY: -180});
-        await expect(page.getByText('Animal que ladra')).toBeVisible();
-    });
-
-    test('does not answer before touch release on mobile', async ({page}, testInfo) => {
-        test.skip(!isMobileProject(testInfo), 'Mobile-only swipe test');
-        await startTestGame(page);
-        await touchSwipeMoveOnly(page, {deltaX: 180, deltaY: 0});
-        await expect(page.getByTestId('jump-scare')).not.toBeVisible();
-        await expect(page.getByTestId('correct-count')).toHaveText('0');
     });
 
     test('manifest and pwa assets are served', async ({request}) => {

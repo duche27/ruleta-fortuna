@@ -4,10 +4,13 @@ const isNative = process.env.PLAYWRIGHT_NATIVE === 'true';
 const previewHost = '127.0.0.1';
 const previewPort = isNative ? 4174 : 4173;
 
+const sharedTests = '**/game.shared.spec.js';
+const desktopTests = '**/game.desktop.spec.js';
+const mobileTests = '**/game.mobile.spec.js';
+const nativeTests = '**/native-game.spec.js';
+
 export default defineConfig({
     testDir: 'tests/e2e',
-    testIgnore: isNative ? undefined : '**/native-game.spec.js',
-    testMatch: isNative ? 'native-game.spec.js' : undefined,
     timeout: 60_000,
     fullyParallel: true,
     forbidOnly: !!process.env.CI,
@@ -27,12 +30,24 @@ export default defineConfig({
     },
     projects: isNative
         ? [
-            {name: 'mobile-android', use: {...devices['Pixel 7']}},
-            {name: 'mobile-ios', use: {...devices['iPhone 13']}}
+            {name: 'mobile-android', use: {...devices['Pixel 7']}, testMatch: nativeTests},
+            {name: 'mobile-ios', use: {...devices['iPhone 13']}, testMatch: nativeTests}
         ]
         : [
-            {name: 'chromium', use: {...devices['Desktop Chrome']}},
-            {name: 'mobile-android', use: {...devices['Pixel 7']}},
-            {name: 'mobile-ios', use: {...devices['iPhone 13']}}
+            {
+                name: 'chromium',
+                use: {...devices['Desktop Chrome']},
+                testMatch: [sharedTests, desktopTests]
+            },
+            {
+                name: 'mobile-android',
+                use: {...devices['Pixel 7']},
+                testMatch: [sharedTests, mobileTests]
+            },
+            {
+                name: 'mobile-ios',
+                use: {...devices['iPhone 13']},
+                testMatch: [sharedTests, mobileTests]
+            }
         ]
 });

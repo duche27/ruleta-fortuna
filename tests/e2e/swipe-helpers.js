@@ -101,7 +101,3 @@ export async function touchSwipe(page, {deltaX, deltaY, steps = 10}) {
 export async function touchSwipeMoveOnly(page, {deltaX, deltaY, steps = 10}) {
     await runTouchSwipe(page, {deltaX, deltaY, steps, moveOnly: true});
 }
-
-export function isMobileProject(testInfo) {
-    return testInfo.project.name.startsWith('mobile');
-}
