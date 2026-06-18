@@ -1,27 +1,10 @@
-import fs from 'node:fs';
+import {createRequire} from 'node:module';
 import {resolve} from 'node:path';
 
-const ROOT = resolve(import.meta.dirname);
-const ASSETS_ROOT = resolve(ROOT, 'assets');
-const IMAGES = /\.(?:avif|gif|jpe?g|png|webp)$/i;
-const AUDIO = /\.(?:m4a|mp3|mp4|mpeg|ogg|wav)$/i;
+const require = createRequire(import.meta.url);
+const {patternForAssetDir, manifestContent} = require('./scripts/manifest-core.cjs');
 
-function patternForAssetDir(relativeDir) {
-    if (relativeDir.startsWith('images/')) return IMAGES;
-    if (relativeDir.startsWith('audio/')) return AUDIO;
-    return null;
-}
-
-function listAssetFiles(dir, pattern) {
-    if (!fs.existsSync(dir) || !pattern) return [];
-    return fs.readdirSync(dir)
-        .filter(f => pattern.test(f) && !f.startsWith('.'))
-        .sort();
-}
-
-function manifestContent(dir, pattern) {
-    return JSON.stringify({files: listAssetFiles(dir, pattern)}, null, 2) + '\n';
-}
+const ASSETS_ROOT = resolve(import.meta.dirname, 'assets');
 
 function sendManifest(res, relativeDir) {
     const pattern = patternForAssetDir(relativeDir);

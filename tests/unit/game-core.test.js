@@ -1,7 +1,5 @@
 import {describe, it, expect} from 'vitest';
-import GameCore from '../../src/domain/game-core.js';
-
-const {
+import {
     isSupportedImageFile,
     isSupportedAudioFile,
     buildAssetUrl,
@@ -10,12 +8,13 @@ const {
     getNextIndex,
     getRandomPhotoIndex,
     detectSwipeDirection,
+    resolveSwipeAction,
     getLetterFillColor,
     getAnswerSummary,
     createInitialProgress,
     applyAnswer,
     applyPass
-} = GameCore;
+} from '../../src/domain/game-core.js';
 
 const sampleQuestions = [
     {letter: 'A', questions: [{question: 'q1', answer: 'a1'}]},
@@ -115,6 +114,13 @@ describe('swipe detection', () => {
 
     it('ignores small movements', () => {
         expect(detectSwipeDirection(10, 5)).toBeNull();
+    });
+
+    it('maps swipe directions to game actions', () => {
+        expect(resolveSwipeAction('left')).toBe('correct');
+        expect(resolveSwipeAction('right')).toBe('incorrect');
+        expect(resolveSwipeAction('up')).toBe('pass');
+        expect(resolveSwipeAction(null)).toBeNull();
     });
 });
 

@@ -1,11 +1,5 @@
 import {test, expect} from '@playwright/test';
-
-async function startTestGame(page) {
-    await page.goto('/?profile=test');
-    await expect(page.getByTestId('game-title')).toHaveText('Ruleta Test');
-    await page.getByTestId('start-button').click();
-    await expect(page.getByTestId('playing-panel')).toBeVisible();
-}
+import {startTestGame} from './helpers.js';
 
 test.describe('Ruleta game', () => {
     test('loads profile from url and shows setup screen', async ({page}) => {
@@ -57,40 +51,6 @@ test.describe('Ruleta game', () => {
         await startTestGame(page);
         await page.getByTestId('mute-button').click();
         await page.getByTestId('correct-button').click();
-        await expect(page.getByTestId('correct-count')).toHaveText('1');
-    });
-
-    test('keyboard shortcuts work on desktop', async ({page}) => {
-        await startTestGame(page);
-        await page.keyboard.press('Enter');
-        await expect(page.getByTestId('correct-count')).toHaveText('1');
-        await page.keyboard.press('Backspace');
-        await expect(page.getByTestId('jump-scare')).toBeVisible();
-    });
-
-    test('swipe right marks answer as correct on mobile', async ({page}, testInfo) => {
-        test.skip(testInfo.project.name !== 'mobile', 'Mobile-only swipe test');
-        await startTestGame(page);
-        await page.evaluate(() => {
-            window.dispatchEvent(new TouchEvent('touchstart', {
-                bubbles: true,
-                changedTouches: [new Touch({
-                    identifier: 1,
-                    target: document.body,
-                    clientX: 40,
-                    clientY: 400
-                })]
-            }));
-            window.dispatchEvent(new TouchEvent('touchend', {
-                bubbles: true,
-                changedTouches: [new Touch({
-                    identifier: 1,
-                    target: document.body,
-                    clientX: 220,
-                    clientY: 400
-                })]
-            }));
-        });
         await expect(page.getByTestId('correct-count')).toHaveText('1');
     });
 

@@ -5,12 +5,12 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 
 export default [
-    {ignores: ['dist/**', 'ios/**', 'android/**', 'node_modules/**', 'lib/**']},
+    {ignores: ['dist/**', 'ios/**', 'android/**', 'node_modules/**']},
     {
         files: ['src/**/*.{js,jsx}', 'tests/**/*.{js,jsx}'],
         languageOptions: {
             ecmaVersion: 2022,
-            globals: globals.browser,
+            globals: {...globals.browser, __NATIVE_SHELL__: 'readonly'},
             parserOptions: {ecmaFeatures: {jsx: true}}
         },
         plugins: {react, 'react-hooks': reactHooks, 'react-refresh': reactRefresh},
@@ -26,11 +26,11 @@ export default [
         }
     },
     {
-        files: ['tests/**/*.{js,jsx}', 'playwright.config.js', 'vitest.config.js'],
+        files: ['tests/**/*.{js,jsx}', 'playwright.config.js', 'vite.config.js'],
         languageOptions: {globals: {...globals.browser, ...globals.node}}
     },
     {
-        files: ['vite.config.js', 'eslint.config.js', 'tailwind.config.js', 'postcss.config.js'],
+        files: ['vite.config.js', 'playwright.config.js', 'eslint.config.js', 'tailwind.config.js', 'postcss.config.js'],
         languageOptions: {globals: globals.node}
     }
 ];

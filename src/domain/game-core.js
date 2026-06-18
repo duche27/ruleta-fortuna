@@ -64,6 +64,13 @@ export function detectSwipeDirection(deltaX, deltaY, threshold = 50) {
     return deltaY < 0 ? 'up' : 'down';
 }
 
+export function resolveSwipeAction(direction) {
+    if (direction === 'left') return 'correct';
+    if (direction === 'right') return 'incorrect';
+    if (direction === 'up') return 'pass';
+    return null;
+}
+
 export function getLetterFillColor({index, currentIndex, gameState, prog}) {
     if (gameState === 'playing' && index === currentIndex) {
         return {fill: '#eab308', stroke: '#ca8a04', strokeWidth: '3'};
@@ -122,19 +129,3 @@ export function applyPass(progress, questions, currentIndex) {
     }
     return {progress: newProgress, currentIndex: nextIdx, gameState: 'playing'};
 }
-
-export default {
-    isSupportedImageFile,
-    isSupportedAudioFile,
-    buildAssetUrl,
-    manifestFilesToUrls,
-    computeStats,
-    getNextIndex,
-    getRandomPhotoIndex,
-    detectSwipeDirection,
-    getLetterFillColor,
-    getAnswerSummary,
-    createInitialProgress,
-    applyAnswer,
-    applyPass
-};
