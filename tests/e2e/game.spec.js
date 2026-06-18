@@ -72,30 +72,45 @@ test.describe('Ruleta game', () => {
         test.skip(testInfo.project.name !== 'mobile', 'Mobile-only swipe test');
         await startTestGame(page);
         await page.evaluate(() => {
-            window.dispatchEvent(new TouchEvent('touchstart', {
+            const panel = document.querySelector('[data-testid="playing-panel"]');
+            const rect = panel.getBoundingClientRect();
+            const startX = rect.left + rect.width / 2;
+            const startY = rect.top + rect.height / 2;
+            const endX = startX - 180;
+            const mkTouch = (x, y) => new Touch({
+                identifier: 1,
+                target: panel,
+                clientX: x,
+                clientY: y,
+                pageX: x,
+                pageY: y,
+                screenX: x,
+                screenY: y,
+                radiusX: 1,
+                radiusY: 1,
+                rotationAngle: 0,
+                force: 1
+            });
+            panel.dispatchEvent(new TouchEvent('touchstart', {
                 bubbles: true,
-                touches: [new Touch({
-                    identifier: 1,
-                    target: document.body,
-                    clientX: 220,
-                    clientY: 400
-                })],
-                changedTouches: [new Touch({
-                    identifier: 1,
-                    target: document.body,
-                    clientX: 220,
-                    clientY: 400
-                })]
+                cancelable: true,
+                touches: [mkTouch(startX, startY)],
+                changedTouches: [mkTouch(startX, startY)],
+                targetTouches: [mkTouch(startX, startY)]
             }));
-            window.dispatchEvent(new TouchEvent('touchend', {
+            document.dispatchEvent(new TouchEvent('touchmove', {
                 bubbles: true,
+                cancelable: true,
+                touches: [mkTouch(endX, startY)],
+                changedTouches: [mkTouch(endX, startY)],
+                targetTouches: [mkTouch(endX, startY)]
+            }));
+            document.dispatchEvent(new TouchEvent('touchend', {
+                bubbles: true,
+                cancelable: true,
                 touches: [],
-                changedTouches: [new Touch({
-                    identifier: 1,
-                    target: document.body,
-                    clientX: 40,
-                    clientY: 400
-                })]
+                changedTouches: [mkTouch(endX, startY)],
+                targetTouches: []
             }));
         });
         await expect(page.getByTestId('correct-count')).toHaveText('1');

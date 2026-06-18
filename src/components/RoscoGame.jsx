@@ -4,8 +4,6 @@ import {
     computeStats,
     getNextIndex,
     getRandomPhotoIndex,
-    detectSwipeDirection,
-    resolveSwipeAction,
     getLetterFillColor,
     getAnswerSummary,
     createInitialProgress
@@ -20,9 +18,27 @@ import {
     lockPortraitOrientation,
     unlockOrientation
 } from '../infrastructure/mobile-session.js';
+import {useSwipeGesture} from '../infrastructure/use-swipe-gesture.js';
 import {
     Play, Check, XIcon, SkipForward, RotateCcw, Volume2, VolumeX, Clock
 } from './Icons.jsx';
+
+function SwipePlaySurface({className = '', enabled, onSwipe, children}) {
+    const surfaceRef = useRef(null);
+    const dragLayerRef = useRef(null);
+
+    useSwipeGesture({enabled, surfaceRef, dragLayerRef, onAction: onSwipe});
+
+    return (
+        <div ref={surfaceRef} className={`swipe-surface relative ${className}`} data-testid="playing-panel">
+            <div className="swipe-hint swipe-hint--correct" aria-hidden="true"/>
+            <div className="swipe-hint swipe-hint--incorrect" aria-hidden="true"/>
+            <div ref={dragLayerRef} className="swipe-drag-layer flex flex-col flex-1 min-h-0 w-full">
+                {children}
+            </div>
+        </div>
+    );
+}
 
 export default function RoscoGame({profile, questions, friendImages, backgroundImage, wrongAnswerImage}) {
     const [gameState, setGameState] = useState('setup');
@@ -33,7 +49,6 @@ export default function RoscoGame({profile, questions, friendImages, backgroundI
     const [isMuted, setIsMuted] = useState(false);
     const [showJumpScare, setShowJumpScare] = useState(false);
     const wakeLockRef = useRef(null);
-    const touchStartRef = useRef(null);
     const profileRef = useRef(profile);
     profileRef.current = profile;
 
@@ -153,6 +168,12 @@ export default function RoscoGame({profile, questions, friendImages, backgroundI
     handleAnswerRef.current = handleAnswer;
     handlePassRef.current = handlePass;
 
+    const handleSwipeAction = useCallback((action) => {
+        if (action === 'correct') handleAnswerRef.current(true);
+        else if (action === 'incorrect') handleAnswerRef.current(false);
+        else if (action === 'pass') handlePassRef.current();
+    }, []);
+
     const handleLetterClick = (index) => {
         if (gameState === 'setup') return;
         const newProgress = [...progress];
@@ -209,39 +230,6 @@ export default function RoscoGame({profile, questions, friendImages, backgroundI
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     });
-
-    useEffect(() => {
-        if (gameState !== 'playing') return;
-
-        const onTouchStart = (e) => {
-            const touch = e.touches[0] ?? e.changedTouches[0];
-            if (!touch) return;
-            touchStartRef.current = {x: touch.clientX, y: touch.clientY, id: touch.identifier};
-        };
-        const onTouchEnd = (e) => {
-            const start = touchStartRef.current;
-            if (!start) return;
-            const touch = Array.from(e.changedTouches).find((t) => t.identifier === start.id)
-                ?? e.changedTouches[0];
-            if (!touch) return;
-
-            const deltaX = touch.clientX - start.x;
-            const deltaY = touch.clientY - start.y;
-            touchStartRef.current = null;
-
-            const action = resolveSwipeAction(detectSwipeDirection(deltaX, deltaY));
-            if (action === 'correct') handleAnswerRef.current(true);
-            else if (action === 'incorrect') handleAnswerRef.current(false);
-            else if (action === 'pass') handlePassRef.current();
-        };
-
-        window.addEventListener('touchstart', onTouchStart, {passive: true});
-        window.addEventListener('touchend', onTouchEnd, {passive: true});
-        return () => {
-            window.removeEventListener('touchstart', onTouchStart);
-            window.removeEventListener('touchend', onTouchEnd);
-        };
-    }, [gameState]);
 
     const renderCircle = (compact = false) => {
         const radius = 140;
@@ -441,19 +429,23 @@ export default function RoscoGame({profile, questions, friendImages, backgroundI
                     </div>
 
                     {compactPlaying ? (
-                        <div className="native-play-shell flex-1 min-h-0 flex flex-col p-2 overflow-hidden" data-testid="playing-panel">
+                        <SwipePlaySurface
+                            enabled
+                            onSwipe={handleSwipeAction}
+                            className="native-play-shell flex-1 min-h-0 flex flex-col p-2 overflow-hidden"
+                        >
                             <div className="native-play-shell__rosco flex items-center justify-center flex-shrink-0">
                                 {renderCircle(false)}
                             </div>
                             <div className="flex-1 min-h-0" aria-hidden="true"/>
-                            <div className="flex-shrink-0 w-full">
+                            <div className="flex-shrink-0 w-full relative z-[2]">
                                 {renderQuestionHeader(true)}
                                 {renderQuestionCard(true)}
                             </div>
-                            <div className="flex-shrink-0 pt-2">
+                            <div className="flex-shrink-0 pt-2 relative z-[2]">
                                 {renderPlayingButtons()}
                             </div>
-                        </div>
+                        </SwipePlaySurface>
                     ) : (
                         <div className={`flex flex-col md:flex-row items-center justify-center ${compactShell ? 'flex-1 min-h-0 gap-3 p-2 overflow-hidden' : 'p-6 sm:p-8 gap-8'}`}>
                             <div className="flex-shrink-0 w-full md:w-auto flex justify-center">
@@ -478,7 +470,8 @@ export default function RoscoGame({profile, questions, friendImages, backgroundI
                             )}
 
                             {gameState === 'playing' && progress.length > 0 && currentQ && (
-                                <div className="flex flex-col h-full fade-in" data-testid="playing-panel">
+                                <SwipePlaySurface enabled onSwipe={handleSwipeAction} className="flex flex-col h-full fade-in">
+                                    <div className="flex flex-col h-full">
                                     <div className="mb-6 flex flex-col sm:flex-row gap-4">
                                         <div className="flex-1 min-w-0">
                                             {renderQuestionHeader(false)}
@@ -497,7 +490,8 @@ export default function RoscoGame({profile, questions, friendImages, backgroundI
                                         </div>
                                     </div>
                                     {renderPlayingButtons()}
-                                </div>
+                                    </div>
+                                </SwipePlaySurface>
                             )}
 
                             {gameState === 'finished' && (
