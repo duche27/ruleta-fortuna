@@ -7,10 +7,6 @@ concurrency:
   group: ci-${{ github.head_ref }}
   cancel-in-progress: true
 
-# Keep in sync with package-lock @playwright/test version (currently 1.61.0).
-env:
-  PLAYWRIGHT_IMAGE: mcr.microsoft.com/playwright:v1.61.0-noble
-
 jobs:
   changes:
     name: Detect changes
@@ -44,8 +40,9 @@ jobs:
     name: Lint & test
     needs: changes
     runs-on: ubuntu-latest
+    # Keep in sync with package-lock @playwright/test version (currently 1.61.0).
     container:
-      image: ${{ env.PLAYWRIGHT_IMAGE }}
+      image: mcr.microsoft.com/playwright:v1.61.0-noble
       options: --user 1001
     steps:
       - uses: actions/checkout@v6
