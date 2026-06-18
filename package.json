@@ -12,10 +12,10 @@
     "test": "npm run test:unit && npm run test:e2e && npm run test:e2e:native",
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
-    "test:e2e:native": "playwright test --config playwright.native.config.js",
+    "test:e2e:native": "PLAYWRIGHT_NATIVE=true playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "lint": "eslint src tests *.config.js playwright.native.config.js",
-    "lint:fix": "eslint src tests *.config.js playwright.native.config.js --fix",
+    "lint": "eslint src tests playwright.config.js vite.config.js",
+    "lint:fix": "eslint src tests playwright.config.js vite.config.js --fix",
     "cap:sync": "CAPACITOR=true npm run build && npx cap sync",
     "cap:ios": "npm run cap:sync && npx cap open ios",
     "cap:android": "npm run cap:sync && npx cap open android"

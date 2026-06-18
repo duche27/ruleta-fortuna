@@ -1,7 +1,5 @@
 import {describe, it, expect} from 'vitest';
-import GameCore from '../../src/domain/game-core.js';
-
-const {
+import {
     isSupportedImageFile,
     isSupportedAudioFile,
     buildAssetUrl,
@@ -16,7 +14,7 @@ const {
     createInitialProgress,
     applyAnswer,
     applyPass
-} = GameCore;
+} from '../../src/domain/game-core.js';
 
 const sampleQuestions = [
     {letter: 'A', questions: [{question: 'q1', answer: 'a1'}]},

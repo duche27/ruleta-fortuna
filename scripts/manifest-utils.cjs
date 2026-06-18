@@ -1,25 +1,6 @@
-const fs = require('fs');
 const path = require('path');
-
-const IMAGES = /\.(?:avif|gif|jpe?g|png|webp)$/i;
-const AUDIO = /\.(?:m4a|mp3|mp4|mpeg|ogg|wav)$/i;
-
-function patternForAssetDir(relativeDir) {
-    if (relativeDir.startsWith('images/')) return IMAGES;
-    if (relativeDir.startsWith('audio/')) return AUDIO;
-    return null;
-}
-
-function listAssetFiles(dir, pattern) {
-    if (!fs.existsSync(dir) || !pattern) return [];
-    return fs.readdirSync(dir)
-        .filter(f => pattern.test(f) && !f.startsWith('.'))
-        .sort();
-}
-
-function manifestContent(dir, pattern) {
-    return JSON.stringify({files: listAssetFiles(dir, pattern)}, null, 2) + '\n';
-}
+const {IMAGES, AUDIO, manifestContent} = require('./manifest-core.cjs');
+const fs = require('fs');
 
 function writeManifests(root) {
     let updated = 0;
@@ -69,8 +50,6 @@ function writeManifestIfChanged(dir, pattern) {
 module.exports = {
     IMAGES,
     AUDIO,
-    patternForAssetDir,
-    listAssetFiles,
     manifestContent,
     writeManifests
 };

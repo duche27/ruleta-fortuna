@@ -1,4 +1,4 @@
-import {defineConfig} from 'vite';
+import {defineConfig} from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import {viteStaticCopy} from 'vite-plugin-static-copy';
 import {resolve} from 'path';
@@ -35,16 +35,15 @@ export default defineConfig({
             }
         }
     ],
-    resolve: {
-        alias: {
-            '@': resolve(__dirname, 'src')
-        }
-    },
     server: {
         port: 5173,
         fs: {allow: ['.']}
     },
     preview: {
         port: 4173
+    },
+    test: {
+        environment: 'node',
+        include: ['tests/unit/**/*.test.js']
     }
 });

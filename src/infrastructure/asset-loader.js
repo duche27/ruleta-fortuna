@@ -1,13 +1,9 @@
 import {
     isSupportedImageFile,
     isSupportedAudioFile,
-    buildAssetUrl,
     manifestFilesToUrls
 } from '../domain/game-core.js';
 import {resolveAssetPath} from './platform.js';
-
-const IMAGE_REGEX = /\.(?:avif|gif|jpe?g|png|webp)/i;
-const AUDIO_REGEX = /\.(?:m4a|mp3|mp4|mpeg|ogg|wav)/i;
 
 async function loadFromManifest(basePath, supportedFn) {
     const url = resolveAssetPath(`${basePath}manifest.json`);
@@ -17,42 +13,24 @@ async function loadFromManifest(basePath, supportedFn) {
     return manifestFilesToUrls(data, resolveAssetPath(basePath), supportedFn);
 }
 
-async function loadFromDirectoryListing(basePath, regex) {
-    const r = await fetch(resolveAssetPath(basePath));
-    if (!r.ok) return [];
-    const text = await r.text();
-    const files = [...text.matchAll(new RegExp(`<a[^>]*href="([^"?#]+${regex.source})"`, 'gi'))]
-        .map(m => decodeURIComponent(m[1]).split('/').pop())
-        .filter(f => f && f !== '..' && f !== '.');
-    return files.map(f => buildAssetUrl(resolveAssetPath(basePath), f));
-}
-
-async function loadFolderAssets(basePath, supportedFn, listingRegex) {
+async function loadFolderAssets(basePath, supportedFn) {
     try {
-        const urls = await loadFromManifest(basePath, supportedFn);
-        if (urls.length > 0) return urls;
-    } catch { /* no manifest */ }
-
-    if (import.meta.env.DEV) {
-        try {
-            const urls = await loadFromDirectoryListing(basePath, listingRegex);
-            if (urls.length > 0) return urls;
-        } catch { /* no listing */ }
+        return await loadFromManifest(basePath, supportedFn);
+    } catch {
+        return [];
     }
-
-    return [];
 }
 
-export async function loadFolderImages(profileName, folder) {
+async function loadFolderImages(profileName, folder) {
     const basePath = `assets/images/${profileName}/${folder}/`;
-    return loadFolderAssets(basePath, isSupportedImageFile, IMAGE_REGEX);
+    return loadFolderAssets(basePath, isSupportedImageFile);
 }
 
-export async function loadFolderAudio(basePath) {
-    return loadFolderAssets(basePath, isSupportedAudioFile, AUDIO_REGEX);
+async function loadFolderAudio(basePath) {
+    return loadFolderAssets(basePath, isSupportedAudioFile);
 }
 
-export async function loadRandomPhotos(profileName) {
+async function loadRandomPhotos(profileName) {
     const urls = await loadFolderImages(profileName, 'random');
     if (urls.length === 0) {
         console.warn(`No se encontraron fotos en assets/images/${profileName}/random/.`);
@@ -60,12 +38,12 @@ export async function loadRandomPhotos(profileName) {
     return urls;
 }
 
-export async function loadSingleImage(profileName, folder) {
+async function loadSingleImage(profileName, folder) {
     const urls = await loadFolderImages(profileName, folder);
     return urls[0] || null;
 }
 
-export async function loadQuestions(profileName) {
+async function loadQuestions(profileName) {
     try {
         const r = await fetch(resolveAssetPath(`questions_and_answers/${profileName}.json`));
         if (r.ok) return await r.json();
@@ -94,7 +72,7 @@ async function loadSharedSingleAudio(category) {
     return urls[0] || null;
 }
 
-export async function resolveProfileAudio(profile) {
+async function resolveProfileAudio(profile) {
     const audioCfg = profile.audio || {};
 
     const [introSrc, correctSrc, incorrectSrc, passSrc] = await Promise.all([

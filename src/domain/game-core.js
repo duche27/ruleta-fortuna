@@ -129,20 +129,3 @@ export function applyPass(progress, questions, currentIndex) {
     }
     return {progress: newProgress, currentIndex: nextIdx, gameState: 'playing'};
 }
-
-export default {
-    isSupportedImageFile,
-    isSupportedAudioFile,
-    buildAssetUrl,
-    manifestFilesToUrls,
-    computeStats,
-    getNextIndex,
-    getRandomPhotoIndex,
-    detectSwipeDirection,
-    resolveSwipeAction,
-    getLetterFillColor,
-    getAnswerSummary,
-    createInitialProgress,
-    applyAnswer,
-    applyPass
-};

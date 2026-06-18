@@ -1,12 +1,6 @@
 import {test, expect} from '@playwright/test';
+import {startTestGame} from './helpers.js';
 import {isMobileProject, touchSwipe, touchSwipeMoveOnly} from './swipe-helpers.js';
-
-async function startTestGame(page) {
-    await page.goto('/?profile=test');
-    await expect(page.getByTestId('game-title')).toHaveText('Ruleta Test');
-    await page.getByTestId('start-button').click();
-    await expect(page.getByTestId('playing-panel')).toBeVisible();
-}
 
 test.describe('Ruleta game', () => {
     test('loads profile from url and shows setup screen', async ({page}) => {
