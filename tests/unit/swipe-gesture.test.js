@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {resolveSwipeAxis} from '../../src/infrastructure/swipe-drag-feedback.js';
+import {resolveSwipeAxis} from '../../src/infrastructure/swipe-gesture.js';
 
 describe('resolveSwipeAxis', () => {
     it('waits until movement is far enough', () => {

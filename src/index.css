@@ -131,7 +131,7 @@ button {
     will-change: transform;
 }
 
-.swipe-surface--grabbing {
+.swipe-drag-layer.swipe-surface--grabbing {
     cursor: grabbing;
 }
 
@@ -153,10 +153,7 @@ button {
     background: linear-gradient(to left, rgba(239, 68, 68, 0.22), transparent 45%);
 }
 
-.swipe-surface[data-swipe='left'] .swipe-hint--correct {
-    opacity: var(--swipe-hint-opacity, 0);
-}
-
+.swipe-surface[data-swipe='left'] .swipe-hint--correct,
 .swipe-surface[data-swipe='right'] .swipe-hint--incorrect {
     opacity: var(--swipe-hint-opacity, 0);
 }
@@ -167,42 +164,43 @@ button {
     pointer-events: none;
 }
 
-.swipe-surface.swipe-surface--dragging[data-swipe='left'] [data-testid='correct-button'] {
+.swipe-surface--dragging[data-swipe='left'] [data-testid='correct-button'] {
     background-color: #22c55e;
     border-color: #22c55e;
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
-.swipe-surface.swipe-surface--dragging[data-swipe='left'] [data-testid='correct-button'] > div {
+.swipe-surface--dragging[data-swipe='left'] [data-testid='correct-button'] > div {
     background-color: #fff;
 }
 
-.swipe-surface.swipe-surface--dragging[data-swipe='left'] [data-testid='correct-button'] svg {
+.swipe-surface--dragging[data-swipe='left'] [data-testid='correct-button'] svg {
     color: #16a34a;
 }
 
-.swipe-surface.swipe-surface--dragging[data-swipe='left'] [data-testid='correct-button'] > span {
+.swipe-surface--dragging[data-swipe='left'] [data-testid='correct-button'] > span {
     color: #fff;
 }
 
-.swipe-surface.swipe-surface--dragging[data-swipe='right'] [data-testid='incorrect-button'] {
+.swipe-surface--dragging[data-swipe='right'] [data-testid='incorrect-button'] {
     background-color: #ef4444;
     border-color: #ef4444;
     box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
 }
 
-.swipe-surface.swipe-surface--dragging[data-swipe='right'] [data-testid='incorrect-button'] > div {
+.swipe-surface--dragging[data-swipe='right'] [data-testid='incorrect-button'] > div {
     background-color: #fff;
 }
 
-.swipe-surface.swipe-surface--dragging[data-swipe='right'] [data-testid='incorrect-button'] svg {
+.swipe-surface--dragging[data-swipe='right'] [data-testid='incorrect-button'] svg {
     color: #dc2626;
 }
 
-.swipe-surface.swipe-surface--dragging[data-swipe='right'] [data-testid='incorrect-button'] > span {
+.swipe-surface--dragging[data-swipe='right'] [data-testid='incorrect-button'] > span {
     color: #fff;
 }
 
+/* Prevent sticky touch hover from looking like a selected answer */
 @media (hover: none) {
     .swipe-surface [data-testid='correct-button']:hover {
         background-color: #f0fdf4;

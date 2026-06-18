@@ -18,27 +18,10 @@ import {
     lockPortraitOrientation,
     unlockOrientation
 } from '../infrastructure/mobile-session.js';
-import {useSwipeGesture} from '../infrastructure/use-swipe-gesture.js';
+import {SwipePlaySurface} from './SwipePlaySurface.jsx';
 import {
     Play, Check, XIcon, SkipForward, RotateCcw, Volume2, VolumeX, Clock
 } from './Icons.jsx';
-
-function SwipePlaySurface({className = '', enabled, onSwipe, children}) {
-    const surfaceRef = useRef(null);
-    const dragLayerRef = useRef(null);
-
-    useSwipeGesture({enabled, surfaceRef, dragLayerRef, onAction: onSwipe});
-
-    return (
-        <div ref={surfaceRef} className={`swipe-surface relative ${className}`} data-testid="playing-panel">
-            <div className="swipe-hint swipe-hint--correct" aria-hidden="true"/>
-            <div className="swipe-hint swipe-hint--incorrect" aria-hidden="true"/>
-            <div ref={dragLayerRef} className="swipe-drag-layer flex flex-col flex-1 min-h-0 w-full">
-                {children}
-            </div>
-        </div>
-    );
-}
 
 export default function RoscoGame({profile, questions, friendImages, backgroundImage, wrongAnswerImage}) {
     const [gameState, setGameState] = useState('setup');
@@ -438,11 +421,11 @@ export default function RoscoGame({profile, questions, friendImages, backgroundI
                                 {renderCircle(false)}
                             </div>
                             <div className="flex-1 min-h-0" aria-hidden="true"/>
-                            <div className="flex-shrink-0 w-full relative z-[2]">
+                            <div className="flex-shrink-0 w-full">
                                 {renderQuestionHeader(true)}
                                 {renderQuestionCard(true)}
                             </div>
-                            <div className="flex-shrink-0 pt-2 relative z-[2]">
+                            <div className="flex-shrink-0 pt-2">
                                 {renderPlayingButtons()}
                             </div>
                         </SwipePlaySurface>

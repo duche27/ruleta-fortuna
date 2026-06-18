@@ -61,21 +61,85 @@ Scans `assets/` and writes `manifest.json` into each subfolder.
 - Rarely needed manually; `build` does this automatically.
 - Ignore or delete `manifest.json` files — they are gitignored and not edited by hand.
 
-### `npm test` — all tests
+### `npm test` — run all tests
 
-Runs unit tests (Vitest) and end-to-end tests (Playwright).
+Runs every test suite in sequence (same as CI):
 
-### `npm run test:unit` — unit tests only
+```bash
+npm test
+```
 
-Fast tests for game logic (`src/domain/`). No browser required.
+Equivalent to:
 
-### `npm run test:e2e` — browser tests only
+```bash
+npm run test:unit && npm run test:e2e && npm run test:e2e:native
+```
 
-Full game flow in Chromium (desktop + mobile emulation). Starts a preview server automatically.
+### `npm run test:unit` — unit tests (Vitest)
+
+Fast tests for pure game logic and swipe helpers. **No browser required.**
+
+```bash
+npm run test:unit
+```
+
+Covers `src/domain/` (stats, letter progression, swipe direction mapping) and `src/infrastructure/swipe-gesture.js` (axis detection).
+
+### `npm run test:e2e` — end-to-end tests (web build)
+
+Full game flows in a real browser against the **production web build**. Playwright starts a preview server automatically.
+
+```bash
+npm run test:e2e
+```
+
+Runs on three emulated browsers:
+
+| Project | Emulates |
+|---------|----------|
+| `chromium` | Desktop Chrome |
+| `mobile-android` | Pixel 7 (Android) |
+| `mobile-ios` | iPhone 13 (Safari / WebKit) |
+
+Includes button gameplay, keyboard shortcuts (desktop only), and **swipe gestures** (mobile only: left = correct, right = incorrect, up = pasapalabra).
+
+**First time only** — install Playwright browsers:
+
+```bash
+npx playwright install --with-deps chromium webkit
+```
+
+Run a single project:
+
+```bash
+npx playwright test --project chromium
+npx playwright test --project mobile-android
+npx playwright test --project mobile-ios
+```
+
+Run only swipe tests:
+
+```bash
+npx playwright test --grep swipe
+```
+
+### `npm run test:e2e:native` — end-to-end tests (Capacitor build)
+
+Same as e2e, but builds with `CAPACITOR=true` to exercise the **compact native shell** (`.native-play-shell` layout used on iOS/Android).
+
+```bash
+npm run test:e2e:native
+```
+
+Runs on `mobile-android` and `mobile-ios`. Verifies native layout and swipe on the Capacitor bundle.
 
 ### `npm run test:e2e:ui` — e2e with Playwright UI
 
-Same as e2e but opens the interactive Playwright debugger.
+Opens the interactive Playwright debugger (step through tests, inspect DOM, watch traces).
+
+```bash
+npm run test:e2e:ui
+```
 
 ### `npm run lint` — code quality
 
@@ -114,6 +178,10 @@ Runs `cap:sync`, then opens Android Studio. Pick an emulator or device and press
 | Verify production web build | `npm run preview:prod` |
 | Test on iPhone simulator | `npm run cap:ios` → Run in Xcode |
 | Test on Android emulator | `npm run cap:android` → Run in Android Studio |
+| Run all tests | `npm test` |
+| Unit tests only | `npm run test:unit` |
+| Web e2e only | `npm run test:e2e` |
+| Native shell e2e only | `npm run test:e2e:native` |
 | Run CI checks locally | `npm run lint` then `npm test` |
 | Deploy to web | Push to `main` (GitHub Actions builds and deploys `dist/`) |
 

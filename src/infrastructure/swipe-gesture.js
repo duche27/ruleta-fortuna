@@ -1,10 +1,75 @@
 import {useEffect, useRef} from 'react';
 import {detectSwipeDirection, resolveSwipeAction} from '../domain/game-core.js';
-import {applySwipeDrag, releaseSwipeDrag} from './swipe-drag-feedback.js';
 
 const DRAG_START_PX = 10;
 const CLICK_SUPPRESS_MS = 400;
+const SWIPE_MAX_OFFSET = 96;
+const SWIPE_DAMPING = 0.58;
+const SWIPE_ROT_FACTOR = 0.085;
+const AXIS_LOCK_PX = 12;
+const AXIS_DIRECTION_BIAS = 1.2;
 const INTERACTIVE_SELECTOR = 'button, a, input, textarea, select, label, [role="button"]';
+
+export function resolveSwipeAxis(absX, absY) {
+    if (absX < AXIS_LOCK_PX && absY < AXIS_LOCK_PX) return null;
+    if (absX >= absY * AXIS_DIRECTION_BIAS) return 'horizontal';
+    if (absY >= absX * AXIS_DIRECTION_BIAS) return 'vertical';
+    return null;
+}
+
+function clearSwipeVisuals(layer, surface) {
+    if (layer) {
+        layer.style.transform = '';
+        layer.style.boxShadow = '';
+    }
+    if (surface) {
+        surface.dataset.swipe = '';
+        surface.style.setProperty('--swipe-hint-opacity', '0');
+    }
+}
+
+function releaseSwipeVisuals(layer, surface) {
+    if (layer) {
+        layer.classList.remove('swipe-surface--grabbing');
+        layer.style.transition = 'transform 0.3s cubic-bezier(0.34, 1.25, 0.64, 1), box-shadow 0.3s ease';
+        layer.style.transform = '';
+        layer.style.boxShadow = '';
+    }
+    if (surface) {
+        surface.dataset.swipe = '';
+        surface.style.setProperty('--swipe-hint-opacity', '0');
+    }
+}
+
+function applySwipeDrag(layer, surface, deltaX, deltaY, axisRef) {
+    if (!layer || !surface) return;
+
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    if (!axisRef.current) {
+        axisRef.current = resolveSwipeAxis(absX, absY);
+        if (!axisRef.current) return;
+    }
+
+    if (axisRef.current === 'vertical') {
+        clearSwipeVisuals(layer, surface);
+        return;
+    }
+
+    const clamped = Math.sign(deltaX) * Math.min(absX, SWIPE_MAX_OFFSET);
+    const tx = clamped * SWIPE_DAMPING;
+    const rot = clamped * SWIPE_ROT_FACTOR;
+    const hintOpacity = Math.min(absX / SWIPE_MAX_OFFSET, 1) * 0.8;
+
+    layer.style.transition = 'none';
+    layer.style.transform = `translateX(${tx}px) rotate(${rot}deg) scale(0.97)`;
+    layer.style.boxShadow = '0 10px 28px rgba(15, 23, 42, 0.14)';
+    layer.classList.add('swipe-surface--grabbing');
+
+    surface.style.setProperty('--swipe-hint-opacity', String(hintOpacity));
+    surface.dataset.swipe = deltaX < 0 ? 'left' : 'right';
+}
 
 export function useSwipeGesture({enabled, surfaceRef, dragLayerRef, onAction}) {
     const startRef = useRef(null);
@@ -21,10 +86,14 @@ export function useSwipeGesture({enabled, surfaceRef, dragLayerRef, onAction}) {
         if (!surface) return undefined;
 
         const getLayer = () => dragLayerRef?.current ?? surface;
+        let documentTouchAttached = false;
 
         const shouldSuppressClick = () =>
             surface.classList.contains('swipe-surface--dragging')
             || performance.now() < suppressClicksUntilRef.current;
+
+        const isInteractiveTarget = (target) =>
+            target instanceof Element && target.closest(INTERACTIVE_SELECTOR);
 
         const armGesture = () => {
             surface.classList.add('swipe-surface--dragging');
@@ -32,7 +101,7 @@ export function useSwipeGesture({enabled, surfaceRef, dragLayerRef, onAction}) {
         };
 
         const disarmGesture = () => {
-            releaseSwipeDrag(getLayer(), surface);
+            releaseSwipeVisuals(getLayer(), surface);
             surface.style.touchAction = '';
             surface.classList.remove('swipe-surface--dragging');
             suppressClicksUntilRef.current = performance.now() + CLICK_SUPPRESS_MS;
@@ -43,7 +112,6 @@ export function useSwipeGesture({enabled, surfaceRef, dragLayerRef, onAction}) {
             startRef.current = {x, y, id};
             axisRef.current = null;
             const layer = getLayer();
-            armGesture();
             layer.style.transition = 'none';
             layer.classList.add('swipe-surface--grabbing');
         };
@@ -76,14 +144,6 @@ export function useSwipeGesture({enabled, surfaceRef, dragLayerRef, onAction}) {
             disarmGesture();
         };
 
-        const activeTouchId = () => startRef.current?.id ?? pendingRef.current?.id;
-
-        const findTouch = (list) => {
-            const id = activeTouchId();
-            if (id === undefined) return null;
-            return Array.from(list).find((touch) => touch.identifier === id) ?? null;
-        };
-
         const tryStartDrag = (x, y, id) => {
             if (!pendingRef.current || pendingRef.current.id !== id || startRef.current) return false;
             const dx = x - pendingRef.current.x;
@@ -96,11 +156,33 @@ export function useSwipeGesture({enabled, surfaceRef, dragLayerRef, onAction}) {
             return true;
         };
 
-        const isInteractiveTarget = (target) => target instanceof Element && target.closest(INTERACTIVE_SELECTOR);
+        const activeTouchId = () => startRef.current?.id ?? pendingRef.current?.id;
+
+        const findTouch = (list) => {
+            const id = activeTouchId();
+            if (id === undefined) return null;
+            return Array.from(list).find((touch) => touch.identifier === id) ?? null;
+        };
+
+        const onGestureMove = (x, y, id) => {
+            if (pendingRef.current?.id === id) {
+                tryStartDrag(x, y, id);
+                return;
+            }
+            if (startRef.current?.id === id) move(x, y);
+        };
+
+        const onGestureEnd = (x, y, id) => {
+            if (pendingRef.current?.id === id) {
+                pendingRef.current = null;
+                disarmGesture();
+                return;
+            }
+            if (startRef.current?.id === id) finish(x, y, id);
+        };
 
         const suppressClick = (e) => {
-            if (!shouldSuppressClick()) return;
-            if (!isInteractiveTarget(e.target)) return;
+            if (!shouldSuppressClick() || !isInteractiveTarget(e.target)) return;
             e.preventDefault();
             e.stopPropagation();
         };
@@ -118,26 +200,13 @@ export function useSwipeGesture({enabled, surfaceRef, dragLayerRef, onAction}) {
             const touch = findTouch(e.touches);
             if (!touch) return;
             e.preventDefault();
-            if (pendingRef.current?.id === touch.identifier) {
-                tryStartDrag(touch.clientX, touch.clientY, touch.identifier);
-                return;
-            }
-            if (startRef.current?.id === touch.identifier) {
-                move(touch.clientX, touch.clientY);
-            }
+            onGestureMove(touch.clientX, touch.clientY, touch.identifier);
         };
 
         const onTouchEnd = (e) => {
             const touch = findTouch(e.changedTouches);
             if (!touch) return;
-            if (pendingRef.current?.id === touch.identifier) {
-                pendingRef.current = null;
-                disarmGesture();
-                return;
-            }
-            if (startRef.current?.id === touch.identifier) {
-                finish(touch.clientX, touch.clientY, touch.identifier);
-            }
+            onGestureEnd(touch.clientX, touch.clientY, touch.identifier);
         };
 
         const onTouchCancel = (e) => {
@@ -157,30 +226,24 @@ export function useSwipeGesture({enabled, surfaceRef, dragLayerRef, onAction}) {
         const onPointerMove = (e) => {
             if (e.pointerType === 'touch') return;
             if (pendingRef.current?.id === e.pointerId && !startRef.current) {
-                if (!tryStartDrag(e.clientX, e.clientY, e.pointerId)) return;
-                try {
-                    surface.setPointerCapture(e.pointerId);
-                } catch {
-                    /* Android WebView may reject capture */
+                if (tryStartDrag(e.clientX, e.clientY, e.pointerId)) {
+                    try {
+                        surface.setPointerCapture(e.pointerId);
+                    } catch {
+                        /* WebView may reject capture */
+                    }
                 }
                 return;
             }
-            if (!startRef.current || startRef.current.id !== e.pointerId) return;
-            move(e.clientX, e.clientY);
+            onGestureMove(e.clientX, e.clientY, e.pointerId);
         };
 
         const onPointerUp = (e) => {
             if (e.pointerType === 'touch') return;
-            if (pendingRef.current?.id === e.pointerId) {
-                pendingRef.current = null;
-                disarmGesture();
-                return;
-            }
-            if (!startRef.current || startRef.current.id !== e.pointerId) return;
             if (surface.hasPointerCapture(e.pointerId)) {
                 surface.releasePointerCapture(e.pointerId);
             }
-            finish(e.clientX, e.clientY, e.pointerId);
+            onGestureEnd(e.clientX, e.clientY, e.pointerId);
         };
 
         const onPointerCancel = (e) => {
@@ -190,8 +253,6 @@ export function useSwipeGesture({enabled, surfaceRef, dragLayerRef, onAction}) {
             }
             cancel(e.pointerId);
         };
-
-        let documentTouchAttached = false;
 
         const attachDocumentTouch = () => {
             if (documentTouchAttached) return;
@@ -228,9 +289,7 @@ export function useSwipeGesture({enabled, surfaceRef, dragLayerRef, onAction}) {
             startRef.current = null;
             axisRef.current = null;
             suppressClicksUntilRef.current = 0;
-            surface.style.touchAction = '';
-            surface.classList.remove('swipe-surface--dragging');
-            releaseSwipeDrag(getLayer(), surface);
+            disarmGesture();
         };
     }, [enabled, surfaceRef, dragLayerRef]);
 }

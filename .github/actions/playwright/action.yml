@@ -14,8 +14,8 @@ runs:
       run: |
         if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = 'true' ]; then
           echo "Playwright cache hit — skipping system deps"
-          npx playwright install chromium
+          npx playwright install chromium webkit
         else
-          echo "Playwright cache miss — installing browser + system deps"
-          npx playwright install --with-deps chromium
+          echo "Playwright cache miss — installing browsers + system deps"
+          npx playwright install --with-deps chromium webkit
         fi

@@ -1,4 +1,5 @@
 import {test, expect} from '@playwright/test';
+import {isMobileProject, touchSwipe, touchSwipeMoveOnly} from './swipe-helpers.js';
 
 async function startTestGame(page) {
     await page.goto('/?profile=test');
@@ -60,7 +61,8 @@ test.describe('Ruleta game', () => {
         await expect(page.getByTestId('correct-count')).toHaveText('1');
     });
 
-    test('keyboard shortcuts work on desktop', async ({page}) => {
+    test('keyboard shortcuts work on desktop', async ({page}, testInfo) => {
+        test.skip(isMobileProject(testInfo), 'Desktop-only test');
         await startTestGame(page);
         await page.keyboard.press('Enter');
         await expect(page.getByTestId('correct-count')).toHaveText('1');
@@ -69,51 +71,33 @@ test.describe('Ruleta game', () => {
     });
 
     test('swipe left marks answer as correct on mobile', async ({page}, testInfo) => {
-        test.skip(testInfo.project.name !== 'mobile', 'Mobile-only swipe test');
+        test.skip(!isMobileProject(testInfo), 'Mobile-only swipe test');
         await startTestGame(page);
-        await page.evaluate(() => {
-            const panel = document.querySelector('[data-testid="playing-panel"]');
-            const rect = panel.getBoundingClientRect();
-            const startX = rect.left + rect.width / 2;
-            const startY = rect.top + rect.height / 2;
-            const endX = startX - 180;
-            const mkTouch = (x, y) => new Touch({
-                identifier: 1,
-                target: panel,
-                clientX: x,
-                clientY: y,
-                pageX: x,
-                pageY: y,
-                screenX: x,
-                screenY: y,
-                radiusX: 1,
-                radiusY: 1,
-                rotationAngle: 0,
-                force: 1
-            });
-            panel.dispatchEvent(new TouchEvent('touchstart', {
-                bubbles: true,
-                cancelable: true,
-                touches: [mkTouch(startX, startY)],
-                changedTouches: [mkTouch(startX, startY)],
-                targetTouches: [mkTouch(startX, startY)]
-            }));
-            document.dispatchEvent(new TouchEvent('touchmove', {
-                bubbles: true,
-                cancelable: true,
-                touches: [mkTouch(endX, startY)],
-                changedTouches: [mkTouch(endX, startY)],
-                targetTouches: [mkTouch(endX, startY)]
-            }));
-            document.dispatchEvent(new TouchEvent('touchend', {
-                bubbles: true,
-                cancelable: true,
-                touches: [],
-                changedTouches: [mkTouch(endX, startY)],
-                targetTouches: []
-            }));
-        });
+        await touchSwipe(page, {deltaX: -180, deltaY: 0});
         await expect(page.getByTestId('correct-count')).toHaveText('1');
+    });
+
+    test('swipe right shows jump scare on mobile', async ({page}, testInfo) => {
+        test.skip(!isMobileProject(testInfo), 'Mobile-only swipe test');
+        await startTestGame(page);
+        await touchSwipe(page, {deltaX: 180, deltaY: 0});
+        await expect(page.getByTestId('jump-scare')).toBeVisible();
+    });
+
+    test('swipe up passes to next letter on mobile', async ({page}, testInfo) => {
+        test.skip(!isMobileProject(testInfo), 'Mobile-only swipe test');
+        await startTestGame(page);
+        await expect(page.getByText('Capital de España')).toBeVisible();
+        await touchSwipe(page, {deltaX: 0, deltaY: -180});
+        await expect(page.getByText('Animal que ladra')).toBeVisible();
+    });
+
+    test('does not answer before touch release on mobile', async ({page}, testInfo) => {
+        test.skip(!isMobileProject(testInfo), 'Mobile-only swipe test');
+        await startTestGame(page);
+        await touchSwipeMoveOnly(page, {deltaX: 180, deltaY: 0});
+        await expect(page.getByTestId('jump-scare')).not.toBeVisible();
+        await expect(page.getByTestId('correct-count')).toHaveText('0');
     });
 
     test('manifest and pwa assets are served', async ({request}) => {
