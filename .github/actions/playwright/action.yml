@@ -1,5 +1,5 @@
 name: Setup Playwright
-description: Install Playwright Chromium with browser cache (skips slow apt on cache hit)
+description: Install Playwright Chromium and WebKit (browser cache + OS deps every run)
 
 runs:
   using: composite
@@ -13,9 +13,12 @@ runs:
     - shell: bash
       run: |
         if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = 'true' ]; then
-          echo "Playwright cache hit — skipping system deps"
+          echo "Playwright cache hit — browsers already downloaded"
           npx playwright install chromium webkit
         else
-          echo "Playwright cache miss — installing browsers + system deps"
-          npx playwright install --with-deps chromium webkit
+          echo "Playwright cache miss — downloading browsers"
+          npx playwright install chromium webkit
         fi
+        # WebKit on Linux needs apt packages; they are not in the browser cache.
+        echo "Installing OS dependencies for Chromium and WebKit"
+        npx playwright install-deps chromium webkit
