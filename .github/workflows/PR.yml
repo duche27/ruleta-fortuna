@@ -7,10 +7,46 @@ concurrency:
   group: ci-${{ github.head_ref }}
   cancel-in-progress: true
 
+# Keep in sync with package-lock @playwright/test version (currently 1.61.0).
+env:
+  PLAYWRIGHT_IMAGE: mcr.microsoft.com/playwright:v1.61.0-noble
+
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      e2e: ${{ steps.filter.outputs.e2e }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            e2e:
+              - '.github/**'
+              - 'package-lock.json'
+              - 'package.json'
+              - 'playwright.config.js'
+              - 'vite.config.js'
+              - 'src/**'
+              - 'tests/**'
+              - 'index.html'
+              - 'assets/**'
+              - 'questions_and_answers/**'
+              - 'scripts/**'
+              - 'tailwind.config.js'
+              - 'postcss.config.js'
+              - 'capacitor.config.json'
+
   ci:
     name: Lint & test
+    needs: changes
     runs-on: ubuntu-latest
+    container:
+      image: ${{ env.PLAYWRIGHT_IMAGE }}
+      options: --user 1001
     steps:
       - uses: actions/checkout@v6
 
@@ -21,7 +57,10 @@ jobs:
 
       - run: npm ci
 
-      - uses: ./.github/actions/playwright
-
       - run: npm run lint
-      - run: npm test
+
+      - run: npm run test:unit
+
+      - name: E2E tests
+        if: needs.changes.outputs.e2e == 'true'
+        run: npm run test:e2e && npm run test:e2e:native
