@@ -21,19 +21,19 @@
     "cap:android": "npm run cap:sync && npx cap open android"
   },
   "dependencies": {
-    "@capacitor/android": "^7.2.0",
-    "@capacitor/core": "^7.2.0",
-    "@capacitor/haptics": "^7.0.1",
-    "@capacitor/ios": "^7.2.0",
-    "@capacitor/screen-orientation": "^7.0.1",
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/haptics": "^8.0.0",
+    "@capacitor/ios": "^8.0.0",
+    "@capacitor/screen-orientation": "^8.0.0",
     "@capacitor/splash-screen": "^8.0.1",
-    "@capacitor/status-bar": "^7.0.1",
+    "@capacitor/status-bar": "^8.0.0",
     "canvas-confetti": "^1.9.3",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },
   "devDependencies": {
-    "@capacitor/cli": "^7.2.0",
+    "@capacitor/cli": "^8.0.0",
     "@playwright/test": "^1.52.0",
     "@vitejs/plugin-react": "^4.4.1",
     "autoprefixer": "^10.4.21",
