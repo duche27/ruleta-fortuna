@@ -1,6 +1,6 @@
 export function JumpScare({imageUrl}) {
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm fade-in"
+        <div className="fixed inset-0 z-100 flex items-center justify-center bg-black/80 backdrop-blur-sm fade-in"
              data-testid="jump-scare">
             <div className="relative animate-jump-scare">
                 {imageUrl ? (

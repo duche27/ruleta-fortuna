@@ -32,7 +32,6 @@ jobs:
               - 'assets/**'
               - 'questions_and_answers/**'
               - 'scripts/**'
-              - 'tailwind.config.js'
               - 'postcss.config.js'
               - 'capacitor.config.json'
 
