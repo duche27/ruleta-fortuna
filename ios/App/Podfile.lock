@@ -1,14 +1,14 @@
 PODS:
-  - Capacitor (7.6.6):
+  - Capacitor (8.4.1):
     - CapacitorCordova
-  - CapacitorCordova (7.6.6)
-  - CapacitorHaptics (7.0.5):
+  - CapacitorCordova (8.4.1)
+  - CapacitorHaptics (8.0.2):
     - Capacitor
-  - CapacitorScreenOrientation (7.0.4):
+  - CapacitorScreenOrientation (8.0.1):
     - Capacitor
-  - CapacitorSplashScreen (7.0.5):
+  - CapacitorSplashScreen (8.0.1):
     - Capacitor
-  - CapacitorStatusBar (7.0.6):
+  - CapacitorStatusBar (8.0.2):
     - Capacitor
 
 DEPENDENCIES:
@@ -34,12 +34,12 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/status-bar"
 
 SPEC CHECKSUMS:
-  Capacitor: 961efd309ab0e390a8081b63c561186f61a6714d
-  CapacitorCordova: 3a4e0027a89a59421c918d19aee9d6ba1c7a3556
-  CapacitorHaptics: 1b145fa83c622e5383a3bac04ea81e2514f0b0f5
-  CapacitorScreenOrientation: a128ea5394d31a12d77f7f6bcb497010945ecda8
-  CapacitorSplashScreen: 409eeaaeac603d264f209c0fcb718aa22fe1f7bb
-  CapacitorStatusBar: 416e9e53fd6397e668d4a181cd2131617d949bd6
+  Capacitor: 35242afe195b1e53c58ca1b827d1b444c5e6602b
+  CapacitorCordova: eebe6bcf807b1b06f3f48237650f96bbcd0eef09
+  CapacitorHaptics: 296f771ecd89c7a1bd92a7b6826a7d268e2e70f5
+  CapacitorScreenOrientation: 6c3c84223ea1dd44aaa7184e2b416dd1192270d0
+  CapacitorSplashScreen: 4b46c72298db552b3c57ce021ef028b6dc7f1fa7
+  CapacitorStatusBar: 01d5763b4ed720de5ce2edbc938de6a98f4c8f32
 
 PODFILE CHECKSUM: d5bb9181e7f86be8430fd3aef0cfde235f0dfc16
 

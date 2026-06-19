@@ -30,9 +30,24 @@ updates:
         dependency-type: production
         patterns:
           - '*'
+        exclude-patterns:
+          - '@capacitor/*'
+          - 'react'
+          - 'react-dom'
         update-types:
           - minor
           - patch
+      # Capacitor core + plugins must bump together (shared peer on @capacitor/core)
+      capacitor:
+        applies-to: version-updates
+        patterns:
+          - '@capacitor/*'
+      # react and react-dom share a peer dependency
+      react:
+        applies-to: version-updates
+        patterns:
+          - 'react'
+          - 'react-dom'
 
   - package-ecosystem: github-actions
     directory: /
