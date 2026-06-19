@@ -70,20 +70,20 @@ export default function RoscoGame({profile, questions, friendImages, backgroundI
                             onSwipe={handleSwipeAction}
                             className="native-play-shell flex-1 min-h-0 flex flex-col p-2 overflow-hidden"
                         >
-                            <div className="native-play-shell__rosco flex items-center justify-center flex-shrink-0">
+                            <div className="native-play-shell__rosco flex items-center justify-center shrink-0">
                                 <RoscoCircle {...circleProps} backgroundImage={backgroundImage} compact={false}/>
                             </div>
                             <div className="flex-1 min-h-0" aria-hidden="true"/>
-                            <div className="flex-shrink-0 w-full">
+                            <div className="shrink-0 w-full">
                                 <QuestionPanel {...questionPanelProps} compact/>
                             </div>
-                            <div className="flex-shrink-0 pt-2">
+                            <div className="shrink-0 pt-2">
                                 <PlayingControls {...playingControlsProps}/>
                             </div>
                         </SwipePlaySurface>
                     ) : (
                         <div className={`flex flex-col md:flex-row items-center justify-center ${compactShell ? 'flex-1 min-h-0 gap-3 p-2 overflow-hidden' : 'p-6 sm:p-8 gap-8'}`}>
-                            <div className="flex-shrink-0 w-full md:w-auto flex justify-center">
+                            <div className="shrink-0 w-full md:w-auto flex justify-center">
                                 <RoscoCircle {...circleProps} backgroundImage={backgroundImage} compact={compactShell}/>
                             </div>
 

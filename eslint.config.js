@@ -30,7 +30,7 @@ export default [
         languageOptions: {globals: {...globals.browser, ...globals.node}}
     },
     {
-        files: ['vite.config.js', 'playwright.config.js', 'eslint.config.js', 'tailwind.config.js', 'postcss.config.js'],
+        files: ['vite.config.js', 'playwright.config.js', 'eslint.config.js', 'postcss.config.js'],
         languageOptions: {globals: globals.node}
     }
 ];

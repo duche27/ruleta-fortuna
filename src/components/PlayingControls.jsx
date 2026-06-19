@@ -2,7 +2,7 @@ import {Check, XIcon, SkipForward} from './Icons.jsx';
 
 export function PlayingControls({compact = false, onCorrect, onIncorrect, onPass}) {
     return (
-        <div className={`flex-shrink-0 ${compact ? 'space-y-2' : 'mt-auto space-y-4'}`}>
+        <div className={`shrink-0 ${compact ? 'space-y-2' : 'mt-auto space-y-4'}`}>
             {!compact && (
                 <p className="text-xs text-center text-slate-400 sm:hidden">
                     Desliza ← correcto · → incorrecto · ↑ pasapalabra

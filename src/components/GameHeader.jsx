@@ -10,7 +10,7 @@ export function GameHeader({
     onReset
 }) {
     return (
-        <div className={`bg-slate-100 border-b border-slate-200 flex justify-between items-center ${compact ? 'p-2 px-3 flex-shrink-0' : 'p-4 px-6'}`}>
+        <div className={`bg-slate-100 border-b border-slate-200 flex justify-between items-center ${compact ? 'p-2 px-3 shrink-0' : 'p-4 px-6'}`}>
             <div className={`flex items-center ${compact ? 'gap-2' : 'gap-6'}`}>
                 <div className={`flex ${compact ? 'gap-2 text-sm' : 'gap-4'}`}>
                     <div className="flex items-center gap-2">
