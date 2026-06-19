@@ -77,7 +77,9 @@ export function useSwipeGesture({enabled, surfaceRef, dragLayerRef, onAction}) {
     const axisRef = useRef(null);
     const suppressClicksUntilRef = useRef(0);
     const onActionRef = useRef(onAction);
-    onActionRef.current = onAction;
+    useEffect(() => {
+        onActionRef.current = onAction;
+    }, [onAction]);
 
     useEffect(() => {
         if (!enabled) return undefined;

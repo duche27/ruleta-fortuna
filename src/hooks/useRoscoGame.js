@@ -27,12 +27,10 @@ export function useRoscoGame({profile, questions, friendImages}) {
     const [isMuted, setIsMuted] = useState(false);
     const [showJumpScare, setShowJumpScare] = useState(false);
     const wakeLockRef = useRef(null);
-    const profileRef = useRef(profile);
-    profileRef.current = profile;
-
+    const getAudioConfig = useCallback(() => profile.audio, [profile]);
     const audioPlayer = useMemo(
-        () => createAudioPlayer(() => profileRef.current.audio),
-        []
+        () => createAudioPlayer(getAudioConfig),
+        [getAudioConfig]
     );
     const hasFriendImages = friendImages.length > 0;
 
@@ -74,15 +72,19 @@ export function useRoscoGame({profile, questions, friendImages}) {
     }, [profile.initialTime, releaseMobileSession]);
 
     useEffect(() => {
-        let timer;
-        if (gameState === 'playing' && timeLeft > 0) {
-            timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
-        } else if (timeLeft === 0 && gameState === 'playing') {
-            setGameState('finished');
-            releaseMobileSession();
-        }
+        if (gameState !== 'playing') return undefined;
+        const timer = setInterval(() => {
+            setTimeLeft(prev => {
+                if (prev <= 1) {
+                    setGameState('finished');
+                    void releaseMobileSession();
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
         return () => clearInterval(timer);
-    }, [gameState, timeLeft, releaseMobileSession]);
+    }, [gameState, releaseMobileSession]);
 
     const friendPhotoSrc = useMemo(() => {
         if (!hasFriendImages) return null;
@@ -128,8 +130,10 @@ export function useRoscoGame({profile, questions, friendImages}) {
 
     const handleAnswerRef = useRef(handleAnswer);
     const handlePassRef = useRef(handlePass);
-    handleAnswerRef.current = handleAnswer;
-    handlePassRef.current = handlePass;
+    useEffect(() => {
+        handleAnswerRef.current = handleAnswer;
+        handlePassRef.current = handlePass;
+    }, [handleAnswer, handlePass]);
 
     const handleSwipeAction = useCallback((action) => {
         if (action === 'correct') handleAnswerRef.current(true);
